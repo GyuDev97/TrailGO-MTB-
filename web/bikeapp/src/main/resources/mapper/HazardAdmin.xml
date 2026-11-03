@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bike.webapp.mapper.HazardAdminMapper">
+
+  <resultMap id="hazardReviewMap" type="com.bike.webapp.dto.HazardReview">
+    <id property="id" column="id"/>
+    <result property="reporter" column="reporter"/>
+    <result property="latitude" column="latitude"/>
+    <result property="longitude" column="longitude"/>
+    <result property="address" column="address"/>
+    <result property="image" column="image"/>
+    <result property="description" column="description"/>
+    <result property="legacyStatus" column="legacy_status"/>
+    <result property="title" column="title"/>
+    <result property="hazardType" column="hazard_type"/>
+    <result property="status" column="status"/>
+    <result property="createdAt" column="created_at"/>
+    <result property="updatedAt" column="updated_at"/>
+    <result property="approvedAt" column="approved_at"/>
+    <result property="approvedBy" column="approved_by"/>
+    <result property="rejectionReason" column="rejection_reason"/>
+    <result property="confirmCount" column="confirm_count"/>
+    <result property="reportCount" column="report_count"/>
+    <result property="active" column="is_active"/>
+    <result property="mergedInto" column="merged_into"/>
+    <result property="radiusM" column="radius_m"/>
+    <result property="source" column="source"/>
+    <result property="createdBy" column="created_by"/>
+  </resultMap>
+
+  <resultMap id="mergeRecordMap" type="com.bike.webapp.dto.HazardMergeRecord">
+    <id property="id" column="id"/>
+    <result property="mergeGroup" column="merge_group"/>
+    <result property="canonicalId" column="canonical_id"/>
+    <result property="mergedId" column="merged_id"/>
+    <result property="adminId" column="admin_id"/>
+    <result property="mergedAt" column="merged_at"/>
+    <result property="mergedBefore" column="merged_before"/>
+    <result property="canonicalBefore" column="canonical_before"/>
+    <result property="canonicalAfter" column="canonical_after"/>
+    <result property="canonicalTitle" column="canonical_title"/>
+    <result property="mergedTitle" column="merged_title"/>
+  </resultMap>
+
+  <sql id="statusExpression">
+    COALESCE(r.status,
+      CASE d.da_status
+        WHEN '1' THEN 'APPROVED'
+        WHEN '2' THEN 'REJECTED'
+        WHEN '3' THEN 'REVIEWING'
+        WHEN '4' THEN 'INACTIVE'
+        ELSE 'PENDING'
+      END)
+  </sql>
+
+  <sql id="baseColumns">
+    d.idx AS id,
+    d.da_rider AS reporter,
+    d.da_latitude AS latitude,
+    d.da_longitude AS longitude,
+    d.da_addr AS address,
+    d.da_image AS image,
+    d.da_content AS description,
+    d.da_status AS legacy_status,
+    COALESCE(NULLIF(r.title, ''), LEFT(COALESCE(d.da_content, '위험지역 제보'), 120)) AS title,
+    COALESCE(r.hazard_type, 'OTHER') AS hazard_type,
+    <include refid="statusExpression"/> AS status,
+    COALESCE(r.created_at, d.create_date, CURRENT_TIMESTAMP) AS created_at,
+    COALESCE(r.updated_at, CURRENT_TIMESTAMP) AS updated_at,
+    r.approved_at,
+    r.approved_by,
+    r.rejection_reason,
+    COALESCE(r.confirm_count, 0) AS confirm_count,
+    COALESCE(r.report_count, 0) AS report_count,
+    COALESCE(r.is_active, 1) AS is_active,
+    r.merged_into,
+    COALESCE(d.da_radius_m, 30) AS radius_m,
+    COALESCE(r.source, 'USER') AS source,
+    r.created_by
+  </sql>
+
+  <select id="findAll" resultMap="hazardReviewMap">
+    SELECT <include refid="baseColumns"/>
+    FROM dangerous_area d
+    LEFT JOIN trailgo_hazard_review r ON r.hazard_id = d.idx
+    <where>
+      <if test="keyword != null">
+        AND (d.da_content LIKE CONCAT('%', #{keyword}, '%')
+          OR d.da_addr LIKE CONCAT('%', #{keyword}, '%')
+          OR d.da_rider LIKE CONCAT('%', #{keyword}, '%')
+          OR r.title LIKE CONCAT('%', #{keyword}, '%'))
+      </if>
+      <if test="hazardType != null">
+        AND COALESCE(r.hazard_type, 'OTHER') = #{hazardType}
+      </if>
+      <if test="status != null">
+        AND <include refid="statusExpression"/> = #{status}
+      </if>
+      <if test="dateFrom != null">
+        AND DATE(COALESCE(r.created_at, d.create_date, CURRENT_TIMESTAMP)) &gt;= #{dateFrom}
+      </if>
+      <if test="dateTo != null">
+        AND DATE(COALESCE(r.created_at, d.create_date, CURRENT_TIMESTAMP)) &lt;= #{dateTo}
+      </if>
+      <if test="source != null">
+        AND COALESCE(r.source, 'USER') = #{source}
+      </if>
+      <if test="reported == 'yes'">
+        AND COALESCE(r.report_count, 0) &gt; 0
+      </if>
+      <if test="reported == 'no'">
+        AND COALESCE(r.report_count, 0) = 0
+      </if>
+    </where>
+    <choose>
+      <when test="sort == 'oldest'">ORDER BY COALESCE(r.created_at, d.create_date, CURRENT_TIMESTAMP) ASC, d.idx ASC</when>
+      <otherwise>ORDER BY COALESCE(r.created_at, d.create_date, CURRENT_TIMESTAMP) DESC, d.idx DESC</otherwise>
+    </choose>
+    LIMIT 200
+  </select>
+
+  <select id="findRecent" resultMap="hazardReviewMap">
+    SELECT <include refid="baseColumns"/>
+    FROM dangerous_area d
+    LEFT JOIN trailgo_hazard_review r ON r.hazard_id = d.idx
+    ORDER BY COALESCE(r.created_at, d.create_date, CURRENT_TIMESTAMP) DESC, d.idx DESC
+    LIMIT #{limit}
+  </select>
+
+  <select id="findPublicApproved" resultMap="hazardReviewMap">
+    SELECT <include refid="baseColumns"/>
+    FROM dangerous_area d
+    INNER JOIN trailgo_hazard_review r ON r.hazard_id = d.idx
+    WHERE r.status = 'APPROVED'
+      AND r.is_active = 1
+      AND r.merged_into IS NULL
+      AND (r.expires_at IS NULL OR r.expires_at &gt; CURRENT_TIMESTAMP)
+    ORDER BY r.updated_at DESC, d.idx DESC
+  </select>
+
+  <select id="findById" resultMap="hazardReviewMap">
+    SELECT <include refid="baseColumns"/>
+    FROM dangerous_area d
+    LEFT JOIN trailgo_hazard_review r ON r.hazard_id = d.idx
+    WHERE d.idx = #{id}
+  </select>
+
+  <select id="countAll" resultType="int">
+    SELECT COUNT(*) FROM dangerous_area
+  </select>
+
+  <select id="countByStatus" resultType="int">
+    SELECT COUNT(*)
+    FROM dangerous_area d
+    LEFT JOIN trailgo_hazard_review r ON r.hazard_id = d.idx
+    WHERE <include refid="statusExpression"/> = #{status}
+  </select>
+
+  <insert id="ensureReview">
+    INSERT IGNORE INTO trailgo_hazard_review
+      (hazard_id, title, hazard_type, status, created_at, updated_at, confirm_count, report_count, is_active)
+    SELECT d.idx,
+           LEFT(COALESCE(d.da_content, '위험지역 제보'), 120),
+           'OTHER',
+           CASE d.da_status
+             WHEN '1' THEN 'APPROVED'
+             WHEN '2' THEN 'REJECTED'
+             WHEN '3' THEN 'REVIEWING'
+             WHEN '4' THEN 'INACTIVE'
+             ELSE 'PENDING'
+           END,
+           COALESCE(d.create_date, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP, 0, 0,
+           CASE WHEN d.da_status = '4' THEN 0 ELSE 1 END
+    FROM dangerous_area d
+    WHERE d.idx = #{id}
+  </insert>
+
+  <update id="updateDangerDetails" parameterType="com.bike.webapp.dto.HazardReview">
+    UPDATE dangerous_area
+    <set>
+      <if test="latitude != null">da_latitude = #{latitude},</if>
+      <if test="longitude != null">da_longitude = #{longitude},</if>
+      <if test="address != null">da_addr = #{address},</if>
+      <if test="description != null">da_content = #{description},</if>
+      <if test="radiusM != null">da_radius_m = #{radiusM},</if>
+      idx = idx
+    </set>
+    WHERE idx = #{id}
+  </update>
+
+  <update id="updateReviewDetails" parameterType="com.bike.webapp.dto.HazardReview">
+    UPDATE trailgo_hazard_review
+    <set>
+      <if test="title != null">title = #{title},</if>
+      <if test="hazardType != null">hazard_type = #{hazardType},</if>
+      updated_at = CURRENT_TIMESTAMP
+    </set>
+    WHERE hazard_id = #{id}
+  </update>
+
+  <update id="updateReviewStatus">
+    UPDATE trailgo_hazard_review
+    SET status = #{status},
+        approved_at = CASE WHEN #{status} = 'APPROVED' THEN CURRENT_TIMESTAMP ELSE approved_at END,
+        approved_by = CASE WHEN #{status} = 'APPROVED' THEN #{adminId} ELSE approved_by END,
+        rejection_reason = CASE WHEN #{status} = 'REJECTED' THEN #{reason} ELSE NULL END,
+        is_active = CASE WHEN #{status} IN ('INACTIVE', 'EXPIRED') THEN 0 ELSE 1 END,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE hazard_id = #{id}
+  </update>
+
+  <update id="updateLegacyStatus">
+    UPDATE dangerous_area SET da_status = #{legacyStatus} WHERE idx = #{id}
+  </update>
+
+  <!-- Guarded: a zone that is already merged (or hidden by someone else a moment ago) is not touched, so
+       two operators merging the same zone cannot both succeed; the service checks the row count. -->
+  <update id="mergeHazard">
+    UPDATE trailgo_hazard_review
+    SET status = 'MERGED', is_active = 0, merged_into = #{targetId}, updated_at = CURRENT_TIMESTAMP
+    WHERE hazard_id = #{id} AND merged_into IS NULL AND status &lt;&gt; 'MERGED'
+  </update>
+
+  <!-- Status change that only applies if the zone still has the status the operator was looking at. -->
+  <update id="transitionStatus">
+    UPDATE trailgo_hazard_review
+    SET status = #{to},
+        approved_at = CASE WHEN #{to} = 'APPROVED' THEN CURRENT_TIMESTAMP ELSE approved_at END,
+        approved_by = CASE WHEN #{to} = 'APPROVED' THEN #{adminId} ELSE approved_by END,
+        rejection_reason = CASE WHEN #{to} = 'REJECTED' THEN #{reason} ELSE NULL END,
+        is_active = CASE WHEN #{to} IN ('INACTIVE', 'EXPIRED') THEN 0 ELSE 1 END,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE hazard_id = #{id} AND status = #{from} AND merged_into IS NULL
+  </update>
+
+  <!-- Zones that were merged into a representative that is itself being merged now follow it (no chains). -->
+  <update id="repointMerged">
+    UPDATE trailgo_hazard_review SET merged_into = #{to}, updated_at = CURRENT_TIMESTAMP WHERE merged_into = #{from}
+  </update>
+
+  <select id="findMergedChildren" resultMap="hazardReviewMap">
+    SELECT <include refid="baseColumns"/>
+    FROM dangerous_area d
+    INNER JOIN trailgo_hazard_review r ON r.hazard_id = d.idx
+    WHERE r.merged_into = #{id}
+    ORDER BY r.updated_at DESC, d.idx DESC
+  </select>
+
+  <select id="findByIds" resultMap="hazardReviewMap">
+    SELECT <include refid="baseColumns"/>
+    FROM dangerous_area d
+    LEFT JOIN trailgo_hazard_review r ON r.hazard_id = d.idx
+    WHERE d.idx IN
+    <foreach collection="ids" item="hazardId" open="(" separator="," close=")">#{hazardId}</foreach>
+    ORDER BY d.idx
+  </select>
+
+  <insert id="insertAdminDanger" useGeneratedKeys="true" keyProperty="row.id" keyColumn="idx">
+    INSERT INTO dangerous_area (da_rider, da_latitude, da_longitude, da_addr, da_image, da_content, da_status, da_radius_m)
+    VALUES (#{row.reporter}, #{lat}, #{lon}, #{row.address}, '', #{row.description}, '1', #{row.radiusM})
+  </insert>
+
+  <insert id="insertAdminReview">
+    INSERT INTO trailgo_hazard_review
+      (hazard_id, title, hazard_type, status, created_at, updated_at, approved_at, approved_by,
+       confirm_count, report_count, is_active, source, created_by)
+    VALUES
+      (#{id}, #{title}, #{type}, 'APPROVED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, #{adminId},
+       0, 0, 1, 'ADMIN', #{adminId})
+  </insert>
+
+  <insert id="insertMerge">
+    INSERT INTO trailgo_hazard_merge
+      (merge_group, canonical_id, merged_id, admin_id, merged_at, merged_before, canonical_before, canonical_after)
+    VALUES
+      (#{group}, #{canonicalId}, #{mergedId}, #{adminId}, CURRENT_TIMESTAMP, #{mergedBefore}, #{canonicalBefore}, #{canonicalAfter})
+  </insert>
+
+  <select id="findMerges" resultMap="mergeRecordMap">
+    SELECT m.id, m.merge_group, m.canonical_id, m.merged_id, m.admin_id, m.merged_at,
+           m.merged_before, m.canonical_before, m.canonical_after,
+           rc.title AS canonical_title, rm.title AS merged_title
+    FROM trailgo_hazard_merge m
+    LEFT JOIN trailgo_hazard_review rc ON rc.hazard_id = m.canonical_id
+    LEFT JOIN trailgo_hazard_review rm ON rm.hazard_id = m.merged_id
+    <where>
+      <if test="canonicalId != null">m.canonical_id = #{canonicalId}</if>
+    </where>
+    ORDER BY m.merged_at DESC, m.id DESC
+    LIMIT #{limit}
+  </select>
+
+  <insert id="insertHistory">
+    INSERT INTO trailgo_hazard_history
+      (hazard_id, action, previous_status, next_status, admin_id, reason, created_at)
+    VALUES
+      (#{hazardId}, #{action}, #{previousStatus}, #{nextStatus}, #{adminId}, #{reason}, CURRENT_TIMESTAMP)
+  </insert>
+</mapper>

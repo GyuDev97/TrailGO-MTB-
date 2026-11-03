@@ -1,0 +1,421 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bike.webapp.mapper.AndroidMapper">
+
+<!-- 안드로이드 주행기록 저장 -->
+	<insert id="insertRecord">
+		insert into riding_record
+		(rr_idx, rr_rider, rr_distance, rr_topspeed, rr_avgspeed, rr_high, rr_gpx, rr_open, rr__breaktime, rr_time, rr_area, rr_name, rr_create_time, rr_duration_sec, rr_memo)
+		values
+		(
+		#{rr_num},
+		#{rr_rider},
+		#{rr_distance},
+		#{rr_topspeed},
+		#{rr_avgspeed},
+		#{rr_high},
+		#{rr_gpx},
+		#{rr_open},
+		#{rr_breaktime},
+		CURRENT_DATE,
+		#{rr_area},
+		#{rr_name},
+		CURRENT_TIMESTAMP,
+		#{rr_time},
+		#{rr_memo,jdbcType=VARCHAR}
+		)
+	</insert>
+
+	<select id="nextRidingRecordId" resultType="int">
+		select coalesce(max(case when rr_idx regexp '^[0-9]+$' then cast(rr_idx as unsigned) else 0 end), 0) + 1
+		from riding_record
+	</select>
+
+<!-- 안드로이드 로그인 -->
+	
+	<!-- 로그인 정보. 실제 rider 테이블에는 r_id, r_pw, r_image만 있다: 닉네임은 소셜 로그인 응답으로 앱이 받고, 클럽 정보는 아직 없다. -->
+	<select id="getLoginInfo" parameterType="String" resultType="com.bike.webapp.dto.LoginInfo">
+		select r.r_image, 0 as cj_club
+		from rider r
+		where r.r_id = #{LoginId}
+	</select>
+	
+	<!-- 기록 시점 날씨 스냅샷 컬럼 (NULL 허용: 기존 기록/키 없음/외부 API 실패) -->
+	<sql id="weatherColumns">
+		rr_weather_observed_at, rr_weather_nx, rr_weather_ny, rr_weather_temperature_c,
+		rr_weather_sky_code, rr_weather_precipitation_code, rr_weather_precipitation_mm, rr_weather_label,
+		rr_memo
+	</sql>
+
+	<!-- 내 기록 가져오기 -->
+	<select id="readRecord" parameterType="String" resultType="com.bike.webapp.dto.App_RidingRecord">
+	select cast(rr_idx as unsigned) as rr_num,
+		rr_rider, rr_create_time as rr_date,
+		rr_distance, rr_topspeed, rr_avgspeed, rr_high, rr_gpx,
+		cast(coalesce(rr_open, '0') as unsigned) as rr_open,
+		coalesce(rr__breaktime, 0) as rr_breaktime,
+		coalesce(rr_duration_sec, 0) as rr_time,
+		rr_area, rr_name,
+		<include refid="weatherColumns"/>
+	from riding_record
+	where rr_rider = #{rr_rider} and rr_idx regexp '^[0-9]+$'
+	order by rr_create_time desc, cast(rr_idx as unsigned) desc
+		
+	</select>
+	
+	<!-- 내 기록 상세보기 -->
+	<select id="getRidingRecordDetail" parameterType="String" resultType="com.bike.webapp.dto.RidingRecord">
+		select cast(rr_idx as unsigned) as rr_num,
+			rr_rider, rr_create_time as rr_date,
+			rr_distance, rr_topspeed, rr_avgspeed, rr_high, rr_gpx,
+			cast(coalesce(rr_open, '0') as unsigned) as rr_open,
+			coalesce(rr__breaktime, 0) as rr_breaktime,
+			coalesce(rr_duration_sec, 0) as rr_time,
+			rr_area, rr_name,
+			<include refid="weatherColumns"/>
+		from riding_record where rr_rider = #{rr_rider} and rr_idx = #{rr_num}
+	</select>
+
+	<!-- 본인 기록 상세: 작성자와 번호가 모두 일치할 때만 조회된다 -->
+	<select id="getOwnRecord" resultType="com.bike.webapp.dto.RidingRecord">
+		select cast(rr_idx as unsigned) as rr_num,
+			rr_rider, rr_create_time as rr_date,
+			rr_distance, rr_topspeed, rr_avgspeed, rr_high, rr_gpx,
+			cast(coalesce(rr_open, '0') as unsigned) as rr_open,
+			coalesce(rr__breaktime, 0) as rr_breaktime,
+			coalesce(rr_duration_sec, 0) as rr_time,
+			rr_area, rr_name,
+			<include refid="weatherColumns"/>
+		from riding_record
+		where rr_rider = #{rr_rider} and rr_idx = CAST(#{rr_num} AS CHAR)
+	</select>
+
+	<!-- 공개 기록 상세 (구 get/detail/{rr_num} 경로용): 비공개 기록은 조회되지 않는다 -->
+	<select id="getPublicRecord" resultType="com.bike.webapp.dto.RidingRecord">
+		select cast(rr_idx as unsigned) as rr_num,
+			rr_rider, rr_create_time as rr_date,
+			rr_distance, rr_topspeed, rr_avgspeed, rr_high, rr_gpx,
+			cast(coalesce(rr_open, '0') as unsigned) as rr_open,
+			coalesce(rr__breaktime, 0) as rr_breaktime,
+			coalesce(rr_duration_sec, 0) as rr_time,
+			rr_area, rr_name,
+			<include refid="weatherColumns"/>
+		from riding_record
+		where rr_idx = CAST(#{rr_num} AS CHAR) and cast(coalesce(rr_open, '0') as unsigned) = 1
+	</select>
+
+	<!-- 기록 시점 날씨 스냅샷 저장: 한 번만 기록하고 이후 덮어쓰지 않는다 -->
+	<update id="updateRecordWeather">
+		update riding_record
+		set rr_weather_observed_at = #{w.observedAtTimestamp},
+			rr_weather_nx = #{w.nx},
+			rr_weather_ny = #{w.ny},
+			rr_weather_temperature_c = #{w.temperatureC},
+			rr_weather_sky_code = #{w.skyCode,jdbcType=VARCHAR},
+			rr_weather_precipitation_code = #{w.precipitationCode},
+			rr_weather_precipitation_mm = #{w.precipitationMm,jdbcType=DECIMAL},
+			rr_weather_label = #{w.label}
+		where rr_idx = CAST(#{rr_num} AS CHAR) and rr_weather_observed_at is null
+	</update>
+	
+	<!-- 메모 수정: 작성자와 번호가 모두 일치할 때만 갱신된다 -->
+	<update id="updateRecordMemo">
+		update riding_record set rr_memo = #{memo,jdbcType=VARCHAR}
+		where rr_rider = #{rr_rider} and rr_idx = CAST(#{rr_num} AS CHAR)
+	</update>
+
+	<!-- 라이딩 사진 -->
+	<select id="countPhotos" resultType="int">
+		select count(*) from riding_record_photo where rr_idx = CAST(#{rr_num} AS CHAR)
+	</select>
+
+	<select id="nextPhotoOrder" resultType="int">
+		select coalesce(max(sort_order), -1) + 1 from riding_record_photo where rr_idx = CAST(#{rr_num} AS CHAR)
+	</select>
+
+	<insert id="insertPhoto">
+		insert into riding_record_photo (photo_id, rr_idx, file_name, sort_order)
+		values (#{id}, CAST(#{rr_num} AS CHAR), #{file}, #{order})
+	</insert>
+
+	<select id="listPhotos" resultType="com.bike.webapp.dto.RecordPhoto">
+		select photo_id as id, sort_order as sortOrder
+		from riding_record_photo
+		where rr_idx = CAST(#{rr_num} AS CHAR)
+		order by sort_order, created_at
+	</select>
+
+	<!-- 사진 파일 접근 판단용: 파일명, 기록 작성자, 공개 여부 -->
+	<select id="findPhotoAccess" resultType="com.bike.webapp.dto.PhotoAccess">
+		select p.file_name as fileName, r.rr_rider as ownerId,
+			cast(coalesce(r.rr_open, '0') as unsigned) = 1 as publicRecord
+		from riding_record_photo p
+		join riding_record r on r.rr_idx = p.rr_idx
+		where p.photo_id = #{id}
+	</select>
+
+	<select id="findPhotoFile" resultType="String">
+		select file_name from riding_record_photo
+		where photo_id = #{id} and rr_idx = CAST(#{rr_num} AS CHAR)
+	</select>
+
+	<delete id="deletePhoto">
+		delete from riding_record_photo
+		where photo_id = #{id} and rr_idx = CAST(#{rr_num} AS CHAR)
+	</delete>
+	<!-- 내 기록 상세보기 공개여부 업데이트 -->
+	<update id="RidingOpenSet" parameterType="com.bike.webapp.dto.RidingRecord">
+		update riding_record set rr_open = #{rr_open} where rr_idx = #{rr_num}
+	</update>
+	
+	<!-- 코스보기 -->
+	<select id="getCourse" parameterType="String" resultType="com.bike.webapp.dto.App_RidingRecord">
+		select riding_record.*,rider.r_image from riding_record, rider
+		where rr_open= '1'
+		and rider.R_ID = riding_record.RR_RIDER
+		order by rr_date desc
+	</select>
+	
+	<!-- 코스 상세 보기 -->
+	<select id="getCourseItem" parameterType="String" resultType="com.bike.webapp.dto.App_RidingRecord">
+		select * from riding_record where rr_num = #{c_num}
+	</select>
+	
+	<!-- 코스 스크랩 -->
+	<select id="insertScrap" parameterType="com.bike.webapp.dto.Scrap_Status">
+		insert into scrap_status
+		(ss_rider, ss_rnum) values (
+		#{ss_rider},
+		#{ss_rnum} )
+	</select>
+	<!-- 좋아요 -->
+	
+	<select id="insertLike" parameterType="com.bike.webapp.dto.RidingRecord">
+		{call
+		declare
+		begin
+		update riding_record set rr_like = #{rr_like}+1 where rr_num = #{rr_num};
+		insert into like_status (ls_rider, ls_rnum) values (#{rr_rider}, #{rr_num});
+		end
+	}
+	</select>
+	
+	<!-- 좋아요 가져오기 -->
+	<select id="getLikeCount" parameterType="com.bike.webapp.dto.RidingRecord">
+	select rr_num, rr_like, rr_rider from riding_record inner join like_status on(like_status.ls_rnum=riding_record.rr_num and like_status.ls_rider=#{rr_rider})
+	</select>
+	
+	<!-- 좋아요 상태가져오기 -->
+	<select id="getLikeStatus" parameterType="Map" resultType="com.bike.webapp.dto.Like_Status">
+		select * from like_status where ls_rider=#{ls_rider} and ls_rnum=#{ls_rnum}
+	</select>
+	
+	
+	<!-- 내 스크립 리스트 -->
+	<select id="getScrap" parameterType="Map" resultType="com.bike.webapp.dto.Scrap_Status">
+select ss_rider, rr_rider, rr_date,  rr_name, ss_rnum, rr_avgspeed, rr_distance, rr_high, rr_time, rr_area, rr_gpx from riding_record INNER JOIN
+		scrap_status ON(scrap_status.ss_rnum = riding_record.rr_num and scrap_status.SS_RIDER=#{ss_rider}) order by rr_gpx desc
+	</select>
+	
+	<!--  내 스크랩 코스 보기 -->
+	<select id="getScrapDetail" parameterType="String" resultType="com.bike.webapp.dto.Scrap_Status">
+		select * from riding_record where rr_num = #{ss_rnum}
+	</select>
+	
+	<!-- 스크랩 코스 삭제 -->
+	<delete id="delScrap">
+		delete from scrap_status where ss_rnum = #{ss_rnum}
+	</delete>
+	
+	<!-- 주행기록전체보기 -->
+	<select id="getRidingRecordAll" parameterType="String" resultType="com.bike.webapp.dto.RidingRecord">
+		select * from riding_record order by rr_num desc
+	</select>
+	
+	<!-- 주행기록전체보기 -->
+	<select id="getRidingRecordAllItem" parameterType="String" resultType="com.bike.webapp.dto.RidingRecord">
+		select * from riding_record where rr_num = #{rr_num}
+	</select>
+	
+	<select id="getCompetition" resultType="com.bike.webapp.dto.App_Competition">
+		select competition.COMP_NUM, competition.COMP_NAME, competition.COMP_NAME,
+    	competition.COMP_BADGE, competition.COMP_CONTENT, competition.COMP_COURSE,
+    	competition.COMP_IMAGE, competition.COMP_PERIOD, course.C_GPX , course.c_name
+		from competition, course 
+		where comp_course = c_num
+		order by comp_num
+	</select>
+	
+	<select id="getjoinedComp" parameterType= "String" resultType="String">
+		select rr_comp from riding_record where rr_rider = #{rr_rider} and rr_comp is not null order by rr_comp
+	</select>
+	
+	<select id="getCompCourse" parameterType="Integer" resultType="String">
+		select c_gpx from course where c_num = #{c_num}
+	</select>
+	
+	<select id="getCompClub" parameterType="Integer" resultType="com.bike.webapp.dto.CompClub">
+		select cs_club, cs_score, cb_name, cb_image from competition_status, club where cs_club = cb_num and cs_comp = #{cs_comp} order by cs_score desc
+	</select>
+	
+	<select id="getDanger" parameterType="String" resultType="com.bike.webapp.dto.DangerousArea">
+		select * from dangerous_area
+	</select>
+	
+	<select id="getCompBadge" parameterType="Integer" resultType="com.bike.webapp.dto.Badge">
+		select * from badge where bg_num = #{comp_badge}
+	</select>
+	
+	<select id="getCompScore" parameterType="Integer" resultType="com.bike.webapp.dto.CompScore">
+		select rr_avgspeed, R_NICKNAME, R_IMAGE from riding_record, rider where RR_RIDER = R_ID and RR_COMP = #{comp_num} order by r_nickname
+	</select>
+	
+	<select id="updateCompScore" parameterType="hashMap">
+	{call
+		declare
+		begin
+		update competition_status SET cs_score = cs_score + #{avg_speed} where cs_comp = #{rr_comp} and cs_club = #{r_club};
+		update mission_status set ms_score = ms_score + 1 where ms_type = '2' and ms_rider = #{LoginId};
+		end
+	}
+	</select>
+	
+
+	<select id="updateRank" parameterType="hashMap">
+		update competition_status set cs_rank = #{rank} where cs_comp = #{rr_comp} and cs_club = #{r_club}
+	</select>
+	
+	<select id="getMissionStatus" parameterType="String" resultType="com.bike.webapp.dto.Mission_Status">
+		select ms_score, ms_type from mission_status where ms_rider = #{LoginId} order by ms_type
+	</select>
+	
+	<select id="getNoClearMission" parameterType="String" resultType="com.bike.webapp.dto.Mission">
+		select distinct m_num, m_content, m_type, m_name from mission, mission_complete
+		where m_num not in ( select mc_mission from mission_complete where mc_rider = #{LoginIn} )
+	</select>
+	
+		<select id="updateMissionStatus" parameterType="hashMap">
+	{call
+		declare
+		begin
+		update mission_status set ms_score = #{typeScore1} where ms_type= '1' and ms_rider = #{LoginId};
+		update mission_status set ms_score = #{typeScore2} where ms_type= '3' and ms_rider = #{LoginId};
+		end
+	}
+	</select>
+	
+	
+	<select id="insertMissionCom" parameterType="hashMap">
+		insert into mission_complete  ( mc_num, mc_rider, mc_mission, mc_time )
+		values ( SQU_MISSIONCOM.nextval, #{LoginId},  #{mc_mission}, #{mc_time} )
+	</select>
+	
+	<select id="getRecord" resultType="com.bike.webapp.dto.RidingRecord">
+		<![CDATA[select * from (select * from riding_record order by rr_num desc) where rownum <=1]]>
+	</select>
+	
+	<insert id="Taginsert">
+		insert into tag_status (ts_rider, ts_rnum, ts_tag) values (
+			#{ts_rider},
+			#{ts_rnum},
+			#{ts_tag}
+		)
+	</insert>
+	
+		<select id="getAllMission" parameterType="String" resultType="com.bike.webapp.dto.App_Mission">
+		select mission.*, badge.BG_IMAGE, badge.bg_name, ms.MS_SCORE from mission, badge, mission_status ms
+		where badge.bg_num = mission.m_badge
+    	and m_type = ms.MS_TYPE
+    	and ms.MS_RIDER = #{LoginId}
+    	union
+		select m.*, badge.bg_image, badge.bg_name, m.M_TYPE 
+		from mission m, badge
+		where m_type = '4'
+		and m.M_BADGE = badge.BG_NUM
+	</select>
+	
+	<select id="getComMission" parameterType="String" resultType="String">
+		select MC_mission from mission_complete
+    	where mc_rider = #{LoginId}
+	</select>
+	
+	<select id="getWhenCom" parameterType="hashMap" resultType="Date">
+		select distinct mc_time from mission_complete
+		where mc_rider = #{LoginId}
+		and mc_mission = #{m_num}
+	</select>
+	
+	<select id="getMisRanking" resultType="com.bike.webapp.dto.App_MissionRanking">
+		select mc_rider, r_nickname, r_image, count(*) as how from mission_complete, rider
+		where mc_rider = rider.R_ID
+		group by mc_rider, r_nickname, r_image
+		order by how desc
+	</select>
+	
+	<select id="getCourseRiview" parameterType="int" resultType="com.bike.webapp.dto.App_CourseReview">
+		select course_riview.*, r_nickname, r_image from course_riview, rider
+		where cr_rnum = #{c_num}
+		and r_id = cr_rider
+		order by cr_time desc
+	</select>
+
+	<select id="updateCourseReview" parameterType="com.bike.webapp.dto.App_CourseReview">
+		update course_riview 
+		set cr_time = #{cr_time}, cr_content = #{cr_content}, cr_images = #{cr_images}
+		where cr_num = #{cr_num}
+	</select>
+	
+	<select id="insertCourseReview" parameterType="com.bike.webapp.dto.App_CourseReview">
+		insert into course_riview ( cr_num, cr_rider, cr_time, cr_content, cr_rnum, cr_images)
+		values (
+		SEQ_COURSEREVIEW.nextval, #{cr_rider}, #{cr_time}, #{cr_content}, #{cr_rnum}, #{cr_images}
+		)
+	</select>
+	
+	<delete id="deleteCourseReview" parameterType="String">
+		delete course_riview where cr_num = #{cr_num}
+	</delete>
+	
+	<select id="sameCheck" parameterType="String" resultType="Integer">
+		select count(*) from rider where r_id = #{LoginId}
+	</select>
+
+	<select id="foinsert" resultType="com.bike.webapp.dto.RidingRecord">
+		insert into riding_record
+		(rr_idx, rr_rider, rr_distance, rr_topspeed, rr_avgspeed, rr_high, rr_gpx, rr_open, rr__breaktime, rr_time, rr_area, rr_name, rr_create_time, rr_duration_sec)
+		values
+		(
+		#{rr_num},
+		#{rr_rider},
+		#{rr_distance},
+		#{rr_topspeed},
+		#{rr_avgspeed},
+		#{rr_high},
+		#{rr_gpx},
+		#{rr_open},
+		#{rr_breaktime},
+		CURRENT_DATE,
+		#{rr_area},
+		#{rr_name},
+		CURRENT_TIMESTAMP,
+		#{rr_time}
+		)
+	</select>
+
+	<select id="foupdate" parameterType="String" resultType="com.bike.webapp.dto.RidingRecord">
+		update riding_record set rr_name = rr_name+1 where rr_name=#{rr_foname}
+	</select>
+	
+	<select id="insertDanger" parameterType="com.bike.webapp.dto.DangerousArea">
+		INSERT INTO dangerous_area (da_rider, da_latitude, da_longitude, da_addr, da_image, da_content, da_status) VALUES
+		(	
+			 #{da_rider},
+			 #{da_latitude},
+			 #{da_longitude},
+			 #{da_addr},
+			 #{da_image},
+			 #{da_content},
+			 '0'
+		)
+	</select>
+</mapper>

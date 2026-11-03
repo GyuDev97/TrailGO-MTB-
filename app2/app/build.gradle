@@ -1,0 +1,142 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 36
+    namespace 'com.bike.trailgo'
+
+    buildFeatures{
+        viewBinding = true
+        buildConfig = true
+    }
+
+    defaultConfig {
+        applicationId "com.bike.trailgo"
+        minSdkVersion 24
+        targetSdkVersion 36
+        versionCode 14
+        versionName "1.0.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        def gyuvisApiToken = project.findProperty("GYUVIS_API_TOKEN") ?: ""
+        def rideAssistantTestMode = project.findProperty("RIDE_ASSISTANT_TEST_MODE") ?: "false"
+        def privacyPolicyUrl = project.findProperty("TRAILGO_PRIVACY_POLICY_URL") ?: ""
+        def accountDeletionUrl = project.findProperty("TRAILGO_ACCOUNT_DELETION_URL") ?: ""
+        buildConfigField "String", "GYUVIS_API_TOKEN", "\"${gyuvisApiToken.replace('\\', '\\\\').replace('\"', '\\\"')}\""
+        buildConfigField "boolean", "RIDE_ASSISTANT_TEST_MODE", rideAssistantTestMode
+        buildConfigField "String", "TRAILGO_PRIVACY_POLICY_URL", "\"${privacyPolicyUrl.replace('\\', '\\\\').replace('\"', '\\\"')}\""
+        buildConfigField "String", "TRAILGO_ACCOUNT_DELETION_URL", "\"${accountDeletionUrl.replace('\\', '\\\\').replace('\"', '\\\"')}\""
+        manifestPlaceholders = [
+                KAKAO_APP_KEY: project.findProperty("KAKAO_APP_KEY") ?: "",
+                GOOGLE_MAPS_API_KEY: project.findProperty("GOOGLE_MAPS_API_KEY") ?: ""
+        ]
+    }
+
+    def quoteBuildConfigValue = { value ->
+        "\"${value.toString().replace('\\', '\\\\').replace('\"', '\\\"')}\""
+    }
+    def trailgoBaseUrl = project.findProperty("TRAILGO_SERVER_BASE_URL")
+    if (trailgoBaseUrl == null || trailgoBaseUrl.trim().isEmpty()) {
+        throw new GradleException("TRAILGO_SERVER_BASE_URL must be set in gradle.properties or with -P")
+    }
+    def gyuvisBaseUrl = project.findProperty("GYUVIS_BASE_URL") ?: trailgoBaseUrl
+    // Keep provider keys out of source control.  Release CI must provide these values.
+
+    // Release signing. The keystore and passwords never live in the repository (key.jks and key.properties are
+    // git-ignored). Like a Flutter project, a key.properties file is read:
+    //   storePassword=...  keyPassword=...  keyAlias=...  storeFile=key.jks
+    // Looked up at TRAILGO_KEY_PROPERTIES (-P / ~/.gradle/gradle.properties / environment) or at app2/key.properties.
+    // A relative storeFile is resolved next to the key.properties file. Without it, TRAILGO_KEYSTORE_FILE,
+    // TRAILGO_KEYSTORE_PASSWORD, TRAILGO_KEY_ALIAS and TRAILGO_KEY_PASSWORD are used; with neither, the release
+    // APK is unsigned.
+    def keyPropertiesPath = project.findProperty("TRAILGO_KEY_PROPERTIES") ?: System.getenv("TRAILGO_KEY_PROPERTIES")
+    def keyPropertiesFile = keyPropertiesPath != null ? new File(keyPropertiesPath.toString()) : rootProject.file("key.properties")
+    def signing = [:]
+    if (keyPropertiesFile.isFile()) {
+        def keyProps = new Properties()
+        keyPropertiesFile.withInputStream { keyProps.load(it) }
+        def storeFileValue = keyProps.getProperty("storeFile")
+        if (storeFileValue != null) {
+            def storeFileRef = new File(storeFileValue)
+            signing.storeFile = storeFileRef.isAbsolute() ? storeFileRef : new File(keyPropertiesFile.parentFile, storeFileValue)
+        }
+        signing.storePassword = keyProps.getProperty("storePassword")
+        signing.keyAlias = keyProps.getProperty("keyAlias")
+        signing.keyPassword = keyProps.getProperty("keyPassword")
+    } else {
+        def legacyPath = project.findProperty("TRAILGO_KEYSTORE_FILE") ?: System.getenv("TRAILGO_KEYSTORE_FILE")
+        if (legacyPath != null) signing.storeFile = new File(legacyPath.toString())
+        signing.storePassword = project.findProperty("TRAILGO_KEYSTORE_PASSWORD") ?: System.getenv("TRAILGO_KEYSTORE_PASSWORD")
+        signing.keyAlias = project.findProperty("TRAILGO_KEY_ALIAS") ?: System.getenv("TRAILGO_KEY_ALIAS") ?: "trailgo"
+        signing.keyPassword = project.findProperty("TRAILGO_KEY_PASSWORD") ?: System.getenv("TRAILGO_KEY_PASSWORD")
+    }
+    def hasReleaseSigning = signing.storeFile != null && signing.storeFile.isFile()
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                storeFile signing.storeFile
+                storePassword signing.storePassword
+                keyAlias signing.keyAlias
+                keyPassword signing.keyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            def debugTrailgoUrl = project.findProperty("TRAILGO_SERVER_BASE_URL_DEBUG") ?: trailgoBaseUrl
+            def debugGyuvisUrl = project.findProperty("GYUVIS_BASE_URL_DEBUG") ?: gyuvisBaseUrl
+            buildConfigField "String", "TRAILGO_SERVER_BASE_URL", quoteBuildConfigValue(debugTrailgoUrl)
+            buildConfigField "String", "GYUVIS_BASE_URL", quoteBuildConfigValue(debugGyuvisUrl)
+        }
+        release {
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Until a production endpoint exists, release deliberately inherits the configured dev URL.
+            def releaseTrailgoUrl = project.findProperty("TRAILGO_SERVER_BASE_URL_RELEASE") ?: trailgoBaseUrl
+            def releaseGyuvisUrl = project.findProperty("GYUVIS_BASE_URL_RELEASE") ?: gyuvisBaseUrl
+            buildConfigField "String", "TRAILGO_SERVER_BASE_URL", quoteBuildConfigValue(releaseTrailgoUrl)
+            buildConfigField "String", "GYUVIS_BASE_URL", quoteBuildConfigValue(releaseGyuvisUrl)
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: "libs", include: ["*.jar"])
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0+'
+    implementation 'com.google.android.material:material:1.0.0'
+    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+    implementation 'androidx.navigation:navigation-fragment:2.1.0'
+    implementation 'androidx.navigation:navigation-ui:2.1.0'
+    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    implementation 'com.squareup.picasso:picasso:2.71828'
+    implementation files('src/main/jniLibs/libDaumMapAndroid.jar')
+    implementation 'com.github.PhilJay:MpAndroidChart:v3.0.1'
+    implementation files('src/main/jniLibs/simple-xml-2.7.1.jar')
+    implementation 'net.danlew:android.joda:2.9.9.3'
+    implementation 'com.google.android.flexbox:flexbox:3.0.0'
+    implementation 'com.kakao.maps.open:android:2.14.1'
+    // Kakao Login. The native app key is provided to the manifest through a Gradle property.
+    implementation 'com.kakao.sdk:v2-user:2.26.0'
+    // Session tokens of a signed-in member are kept encrypted (Android Keystore).
+    implementation 'androidx.security:security-crypto:1.0.0'
+    implementation 'com.google.android.gms:play-services-maps:17.0.0'
+    implementation 'com.google.android.gms:play-services-location:17.0.0'
+    implementation 'commons-io:commons-io:2.6'
+    testImplementation 'junit:junit:4.12'
+    testImplementation 'net.sf.kxml:kxml2:2.3.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.3.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.7.0'
+    implementation group: 'com.squareup.retrofit2', name: 'converter-scalars', version: '2.3.0'
+
+
+}

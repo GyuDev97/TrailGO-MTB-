@@ -1,0 +1,34 @@
+<gpxInfo version="1.1" creator="TrailGO" xmlns="http://www.topografix.com/GPX/1/1">
+   <metadata>
+      <bounds maxLat="37.48639943" maxLon="126.92556887" minLat="37.48628137" minLon="126.9251865"/>
+      <desc>TrailGO</desc>
+   </metadata>
+   <trk>
+      <trkseg>
+         <trkpt lat="37.48639943" lon="126.9251865">
+            <ele>69.5831298828125</ele>
+         </trkpt>
+         <trkpt lat="37.48629703" lon="126.92556862">
+            <ele>84.1920166015625</ele>
+         </trkpt>
+         <trkpt lat="37.48631513" lon="126.92556887">
+            <ele>74.8974609375</ele>
+         </trkpt>
+         <trkpt lat="37.48628909" lon="126.92552922">
+            <ele>71.51324462890625</ele>
+         </trkpt>
+         <trkpt lat="37.48628137" lon="126.92550742">
+            <ele>65.9462890625</ele>
+         </trkpt>
+         <trkpt lat="37.486292" lon="126.92539347">
+            <ele>52.27020263671875</ele>
+         </trkpt>
+         <trkpt lat="37.48628756" lon="126.9253561">
+            <ele>49.69354248046875</ele>
+         </trkpt>
+         <trkpt lat="37.48631588" lon="126.92535546">
+            <ele>55.67694091796875</ele>
+         </trkpt>
+      </trkseg>
+   </trk>
+</gpxInfo>

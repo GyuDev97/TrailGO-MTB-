@@ -1,0 +1,1 @@
+<TextView xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/profile_menu_favorite" style="@style/ProfileMockRow" android:drawableStart="@drawable/drawer_ic_bookmark_custom" android:text="즐겨찾기" />

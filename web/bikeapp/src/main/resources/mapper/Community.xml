@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bike.webapp.mapper.CommunityMapper">
+
+	<!-- 클럽명 중복 검사 -->
+	<select id="checkClubName" parameterType="String" resultType="Integer">
+		SELECT count(*) FROM CLUB WHERE CB_NAME = #{cb_name}
+	</select>
+	
+	<!-- 클럽 생성 -->
+	<insert id="insertClub" parameterType="com.bike.webapp.dto.Club">
+		insert into club(cb_num, cb_manager, cb_name, cb_image) values(SEQ_CLUBNUM.nextval, #{cb_manager}, #{cb_name}, #{cb_image})
+	</insert>
+	
+	<!-- 클럽 가입 -->
+	<insert id="insertCJ" parameterType="com.bike.webapp.dto.Club_Join">
+		insert into club_join(cj_rider, cj_club, cj_join, cj_num) values(#{cj_rider}, SEQ_CLUBNUM.currval, (SYSDATE+9/24), SEQ_JOIN.nextval)
+	</insert>
+	
+	<!-- 클럽 캘린더 일정 조회 -->
+	<select id="getCCList" parameterType="int" resultType="com.bike.webapp.dto.Club_Calender">
+		SELECT * FROM CLUB_CALENDER WHERE CC_CLUB=#{cc_club}
+	</select>
+	
+	<!-- 클럽 캘린더 일정 등록 -->
+	<insert id="postCC" parameterType="com.bike.webapp.dto.Club_Calender">
+		INSERT INTO CLUB_CALENDER(CC_NUM,CC_CLUB,CC_RIDER, CC_CONTENT, CC_START, CC_END, CC_COLOR, CC_ALLDAY)
+		VALUES(SEQ_CLUBCALENDER.NEXTVAL, #{cc_club}, #{cc_rider}, #{cc_content}, #{cc_start}, #{cc_end}, #{cc_color}, #{cc_allday})
+	</insert>
+	
+	<!-- 클럽 캘린더 일정 수정 -->
+	<update id="updateCC" parameterType="com.bike.webapp.dto.Club_Calender">
+		UPDATE CLUB_CALENDER SET CC_CONTENT=#{cc_content}, CC_START=#{cc_start}, CC_END=#{cc_end}, CC_COLOR=#{cc_color}, CC_ALLDAY=#{cc_allday} WHERE CC_NUM=#{cc_num}
+	</update>
+	
+	<!-- 클럽 캘린더 일정 삭제 -->
+	<delete id="deleteCC" parameterType="int">
+		DELETE FROM CLUB_CALENDER WHERE CC_NUM=#{cc_num}
+	</delete>
+	
+	<select id="getMember" parameterType="int" resultType="com.bike.webapp.dto.Club">
+		select * from club order by cb_num where cb_num=#{cb_num}
+	</select>
+	
+	<select id="getClub" parameterType="String" resultType="com.bike.webapp.dto.Club">
+		<![CDATA[ select * from club where cb_num<>999 order by cb_num ]]>
+	</select>	
+	
+	<insert id="signClub" parameterType="com.bike.webapp.dto.Club_Join">
+		insert into club_join(cj_rider, cj_club, cj_join, cj_num) values(#{cj_rider}, #{cj_club}, (SYSDATE+9/24), SEQ_JOIN.nextval)
+	</insert>
+	
+	<!-- 가입 클럽 조회 -->
+	<select id="getJoinCLub" parameterType="String" resultType="int">
+		<![CDATA[select cj_club from (select * from club_join where cj_rider=#{cj_rider} order by cj_join desc) where rownum < 2 and cj_withdraw is null]]>
+	</select>
+	
+	<!-- 클럽 넘버로 클럽 정보 조회 -->
+	<select id="getClubInfo" parameterType="int" resultType="com.bike.webapp.dto.Club">
+		select * from club where cb_num = #{c_num}
+	</select>
+	
+	<!-- SNS게시글 조회 -->
+	<select id="getSNSList" parameterType="String" resultType="com.bike.webapp.dto.Board">
+		<![CDATA[
+			SELECT b_num, r_image b_img, rider.r_nickname b_rider, b_content, to_char(b_day, 'YYYY-MM-DD HH24:MI:SS') b_title, b_file, b_type  FROM board, rider where b_rider=r_id and b_club=999 order by b_day desc
+		]]>
+	</select>
+	
+	<!-- SNS게시글 등록 -->
+	<insert id="postSNS" parameterType="com.bike.webapp.dto.Board">
+		insert into board(b_num, b_club, b_rider, b_content, b_file, b_type, b_day)
+		values(SEQ_BOARDNUM.nextval ,999, #{b_rider}, #{b_content}, #{b_file, jdbcType=VARCHAR}, #{b_type}, sysdate)
+	</insert>
+	
+	<!-- SNS게시글 삭제 -->
+	<delete id="deleteSNS" parameterType="int">
+		delete from board where b_num=#{b_num}
+	</delete>
+	
+	<!-- SNS게시글 수정 -->
+	<update id="updateSNS" parameterType="com.bike.webapp.dto.Board">
+		update board set b_content = #{b_content}, b_file=#{b_file} where b_num=#{b_num}
+	</update>
+	
+	<!-- SNS게시글 수정2 -->
+	<update id="updateSNS2" parameterType="com.bike.webapp.dto.Board">
+		update board set b_content = #{b_content} where b_num=#{b_num}
+	</update>
+	
+	<!-- SNS댓글 조회 -->
+	<select id="getReply" parameterType="int" resultType="com.bike.webapp.dto.Reply">
+		select b.r_image , a.re_num, a.re_board, b.r_nickname re_rider, a.re_content, to_char(a.re_day, 'YYYY-MM-DD HH24:MI:SS') re_day, a.re_confirm
+		from reply a, rider b 
+		where a.re_rider=b.r_id and re_board = #{re_board} order by re_day desc
+	</select>
+	
+	<!-- SNS댓글 등록 -->
+	<insert id="postReply" parameterType="com.bike.webapp.dto.Reply">
+		insert into reply(re_num, re_board, re_rider, re_content, re_day, re_confirm)
+		values(SEQ_REPLY_RENUM.nextval, #{re_board}, #{re_rider}, #{re_content}, sysdate, 0)
+	</insert>
+	
+	<!-- SNS댓글 삭제 -->
+	<delete id="deleteReply" parameterType="int">
+		delete reply where re_num = #{re_num}
+	</delete>
+	
+	<!-- SNS댓글 수정 -->
+	<update id="putReply" parameterType="com.bike.webapp.dto.Reply">
+		update reply set re_content=#{re_content}, re_day=sysdate where re_num=#{re_num}
+	</update>
+	
+	<!-- 거래물품 조회 -->
+	<select id="getGoodsList" resultType="com.bike.webapp.dto.Goods">
+		select goods.*, g_like from goods, ( select g_num, count(gl_rider) g_like from ( select g_num, gl_rider from goods a, goods_like b where g_num=gl_goods(+) ) group by g_num ) sq1
+		where goods.g_num=sq1.g_num order by goods.g_num desc
+	</select>
+	
+	<!-- 거래물품 조회수 증가 -->
+	<update id="updateGoodsHit" parameterType="int">
+		update goods set g_hit=g_hit+1 where g_num=#{g_num}
+	</update>
+	
+	<!-- 거래물품 상세조회 -->
+	<select id="getGoodsDetail" parameterType="int" resultType="com.bike.webapp.dto.Goods">
+		select goods.g_num, goods.g_title, to_char(goods.g_date, 'YYYY-MM-DD HH24:MI:SS' ) g_date, goods.g_content, goods.g_price, goods.g_hit, g_like, goods.g_image, goods.g_status, goods.g_rider 
+		from goods, ( select g_num, count(gl_rider) g_like 
+		from ( select g_num, gl_rider from goods a, goods_like b where g_num=gl_goods(+) ) group by g_num ) sq1
+		where goods.g_num=sq1.g_num and goods.g_num=#{g_num}
+	</select>
+	
+	<!-- 사용자 정보 조회 -->
+	<select id="getUserInfo" parameterType="String" resultType="com.bike.webapp.dto.Rider">
+		select * from rider where r_id=#{r_id}
+	</select>
+	
+	<!-- 사용자 거래 내역 조회 -->	
+	<select id="getUserTradeInfo" parameterType="com.bike.webapp.dto.Goods" resultType="Integer">
+		select count(g_status) from goods where g_rider =#{g_rider} group by g_status having g_status=#{g_status}
+	</select>
+	
+	<!-- 거래물품 관심등록 -->
+	<insert id="updateGoodsLike" parameterType="com.bike.webapp.dto.Goods_like">
+		insert into goods_like values(#{gl_rider},#{gl_goods})
+	</insert>
+	
+	<!-- 거래 완료 업데이트 -->
+	<update id="updateTradeEnd" parameterType="com.bike.webapp.dto.Goods_like">
+		insert into trade_board values(#{gl_rider},#{gl_goods},SEQ_TRADE_NUM.nextval,systimestamp)
+	</update>
+	
+	<!-- 거래 완료 업데이트2-->
+	<update id="updateTradeEnd2" parameterType="com.bike.webapp.dto.Goods_like">
+		update goods set g_status=2 where g_num = #{gl_goods}
+	</update>
+	
+	<!-- 나의 거래 조회 -->
+	<select id="getSalerInfo" parameterType="String" resultType="com.bike.webapp.dto.Saler">
+		select * from (
+			select count(*) sale from GOODS where g_rider=#{g_rider} and g_status=0 ),
+			( select count(*) sold from GOODS where g_rider=#{g_rider} and g_status=2 )
+	</select>
+	
+	<!-- 거래 물품 등록 -->
+	<insert id="postGoods" parameterType="com.bike.webapp.dto.Goods">
+		insert into goods values(SEQ_GOODS_NUM.nextval,#{g_title},#{g_location},#{g_content},#{g_image},#{g_price},0,0,#{g_rider},systimestamp)
+	</insert>
+	
+	<!-- 사용자 거래물품 조회 -->
+	<select id="getRiderGoodsList" resultType="com.bike.webapp.dto.Goods">
+		select goods.*, g_like 
+		from goods, ( 
+		  select g_num, count(gl_rider) g_like 
+		  from ( select g_num, gl_rider from goods a, goods_like b where g_num=gl_goods(+) and a.g_rider=#{rider} and a.g_status=#{status} ) group by g_num ) sq1
+				where goods.g_num=sq1.g_num order by goods.g_num desc
+	</select>
+	
+	<!-- 사용자 물품 삭제 -->
+	<delete id="removeGoods" parameterType="int">
+		delete from goods where g_num=#{g_num}
+	</delete>
+	
+	<!-- 사용자 물품 수정 이미지X -->
+	<update id="updateGoods" parameterType="com.bike.webapp.dto.Goods">
+		update goods set g_title=#{g_title}, g_price=#{g_price}, g_content=#{g_content}, g_date=systimestamp where g_num = #{g_num}
+	</update>
+	
+	<!-- 사용자 물품 수정 이미지O -->
+	<update id="updateGoods2" parameterType="com.bike.webapp.dto.Goods">
+		update goods set g_title=#{g_title}, g_price=#{g_price}, g_content=#{g_content}, g_date=systimestamp, g_image=#{g_image} where g_num = #{g_num}
+	</update>
+</mapper>
+

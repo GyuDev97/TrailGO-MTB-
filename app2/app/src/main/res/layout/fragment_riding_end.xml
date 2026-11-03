@@ -1,0 +1,549 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F8FAF8"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
+
+    <!-- App bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="#FFFFFF"
+        android:gravity="center_vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="16dp">
+
+        <TextView
+            android:id="@+id/cancelriding"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:contentDescription="뒤로"
+            android:gravity="center"
+            android:text="‹"
+            android:textColor="#152019"
+            android:textSize="34sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="라이딩 저장"
+            android:textColor="#152019"
+            android:textSize="19sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:fillViewport="false">
+
+        <LinearLayout
+            android:id="@+id/save_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- 1. Kakao map with the whole route -->
+            <FrameLayout
+                android:id="@+id/map_card"
+                android:layout_width="match_parent"
+                android:layout_height="190dp"
+                android:background="@drawable/riding_save_card"
+                android:clipToOutline="true"
+                android:elevation="2dp">
+
+                <RelativeLayout
+                    android:id="@+id/map_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+                <TextView
+                    android:id="@+id/map_expand"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="end|top"
+                    android:layout_margin="10dp"
+                    android:background="@drawable/riding_save_map_control"
+                    android:contentDescription="지도 확대"
+                    android:gravity="center"
+                    android:text="⤢"
+                    android:textColor="#1F7A2E"
+                    android:textSize="20sp" />
+            </FrameLayout>
+
+            <!-- 2. Date / time -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/records_ic_calendar" />
+
+                <TextView
+                    android:id="@+id/ride_date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:textColor="#3F4A43"
+                    android:textSize="13sp" />
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginStart="14dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/riding_ic_clock" />
+
+                <TextView
+                    android:id="@+id/ride_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:textColor="#3F4A43"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/addr"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="#7A837D"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <!-- 3. Core stats: 2 rows x 3 columns -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/riding_save_card"
+                android:elevation="2dp"
+                android:orientation="vertical"
+                android:padding="6dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="66dp"
+                    android:orientation="horizontal">
+
+                    <LinearLayout style="@style/SaveStatCell">
+                        <TextView style="@style/SaveStatLabel" android:text="이동 거리" />
+                        <TextView android:id="@+id/enddis" style="@style/SaveStatValue" android:text="-" />
+                    </LinearLayout>
+
+                    <View style="@style/SaveStatDivider" />
+
+                    <LinearLayout style="@style/SaveStatCell">
+                        <TextView style="@style/SaveStatLabel" android:text="라이딩 시간" />
+                        <TextView android:id="@+id/ending" style="@style/SaveStatValue" android:text="-" />
+                    </LinearLayout>
+
+                    <View style="@style/SaveStatDivider" />
+
+                    <LinearLayout style="@style/SaveStatCell">
+                        <TextView style="@style/SaveStatLabel" android:text="휴식 시간" />
+                        <TextView android:id="@+id/endresttime" style="@style/SaveStatValue" android:text="-" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#E7ECE8" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="66dp"
+                    android:orientation="horizontal">
+
+                    <LinearLayout style="@style/SaveStatCell">
+                        <TextView style="@style/SaveStatLabel" android:text="평균 속도" />
+                        <TextView android:id="@+id/endavg" style="@style/SaveStatValue" android:text="-" />
+                    </LinearLayout>
+
+                    <View style="@style/SaveStatDivider" />
+
+                    <LinearLayout style="@style/SaveStatCell">
+                        <TextView style="@style/SaveStatLabel" android:text="최고 속도" />
+                        <TextView android:id="@+id/endmax" style="@style/SaveStatValue" android:text="-" />
+                    </LinearLayout>
+
+                    <View style="@style/SaveStatDivider" />
+
+                    <LinearLayout style="@style/SaveStatCell">
+                        <TextView style="@style/SaveStatLabel" android:text="획득 고도" />
+                        <TextView android:id="@+id/endget" style="@style/SaveStatValue" android:text="-" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Elevation graph: collapsed by default to keep the screen short -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/riding_save_card"
+                android:elevation="2dp"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/chart_toggle"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="고도 그래프"
+                        android:textColor="#152019"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/chart_arrow"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="펼치기 ▾"
+                        android:textColor="#1F7A2E"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <FrameLayout
+                    android:id="@+id/chart_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="160dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="12dp"
+                    android:visibility="gone">
+
+                    <com.github.mikephil.charting.charts.LineChart
+                        android:id="@+id/chart"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+
+                    <TextView
+                        android:id="@+id/chart_empty"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:textColor="#7A837D"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </FrameLayout>
+            </LinearLayout>
+
+            <!-- 5. Name -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/riding_save_card"
+                android:elevation="2dp"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="라이딩 이름"
+                    android:textColor="#152019"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/riding_nameinput"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/riding_save_input"
+                    android:gravity="center_vertical"
+                    android:hint="예: 관악산 주말 라이딩"
+                    android:imeOptions="actionNext"
+                    android:inputType="textCapSentences"
+                    android:maxLength="30"
+                    android:maxLines="1"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:textColor="#152019"
+                    android:textColorHint="#A4ACA6"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- 6. Memo -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/riding_save_card"
+                android:elevation="2dp"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="라이딩 메모 (선택)"
+                    android:textColor="#152019"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/ride_memo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/riding_save_input"
+                    android:gravity="top|start"
+                    android:hint="라이딩 소감이나 코스 정보를 남겨 보세요."
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:maxLength="500"
+                    android:maxLines="8"
+                    android:minLines="4"
+                    android:padding="14dp"
+                    android:textColor="#152019"
+                    android:textColorHint="#A4ACA6"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/memo_counter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="end"
+                    android:text="0/500"
+                    android:textColor="#7A837D"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- 7. Photos -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/riding_save_card"
+                android:elevation="2dp"
+                android:orientation="vertical"
+                android:paddingBottom="14dp"
+                android:paddingStart="16dp"
+                android:paddingTop="16dp"
+                android:paddingEnd="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="사진 (최대 10장)"
+                        android:textColor="#152019"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/photo_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0/10"
+                        android:textColor="#7A837D"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <com.bike.trailgo.ui.photos.PhotoStripView
+                    android:id="@+id/photo_strip"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp" />
+            </LinearLayout>
+
+            <!-- 8. Weather at the start of the ride -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/riding_save_card"
+                android:elevation="2dp"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="라이딩 당시 날씨"
+                    android:textColor="#152019"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:gravity="center_vertical"
+                    android:minHeight="40dp"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/weather_icon"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/records_ic_cloud"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/weather_text"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:text="날씨를 확인하는 중입니다"
+                        android:textColor="#152019"
+                        android:textSize="15sp" />
+
+                    <TextView
+                        android:id="@+id/weather_note"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#7A837D"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 9. Visibility -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/riding_save_card"
+                android:elevation="2dp"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="공개 설정"
+                    android:textColor="#152019"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <RadioGroup
+                    android:id="@+id/selectgroup"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
+
+                    <RadioButton
+                        android:id="@+id/NoOpen"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/riding_save_visibility_choice"
+                        android:button="@null"
+                        android:gravity="center"
+                        android:text="비공개"
+                        android:textColor="@drawable/riding_save_visibility_text"
+                        android:textSize="13sp" />
+
+                    <RadioButton
+                        android:id="@+id/AllOpen"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/riding_save_visibility_choice"
+                        android:button="@null"
+                        android:gravity="center"
+                        android:text="전체 공개"
+                        android:textColor="@drawable/riding_save_visibility_text"
+                        android:textSize="13sp" />
+                </RadioGroup>
+
+                <TextView
+                    android:id="@+id/visibility_hint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="#7A837D"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- 10. Fixed save bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FFFFFF"
+        android:elevation="8dp"
+        android:gravity="center_vertical"
+        android:minHeight="72dp"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
+
+        <TextView
+            android:id="@+id/cancelriding_bottom"
+            android:layout_width="80dp"
+            android:layout_height="52dp"
+            android:gravity="center"
+            android:text="취소"
+            android:textColor="#1F7A2E"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <ProgressBar
+            android:id="@+id/save_progress"
+            style="?android:attr/progressBarStyleSmall"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginEnd="10dp"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/saveriding"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:background="@drawable/riding_save_primary_button"
+            android:text="기록 저장"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</LinearLayout>

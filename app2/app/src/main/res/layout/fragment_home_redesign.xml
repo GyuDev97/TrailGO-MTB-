@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF">
+
+    <!-- App bar: same dark green as the toolbar of the other screens. Only working actions live here. -->
+    <LinearLayout
+        android:id="@+id/home_header"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:background="@drawable/home_header_bg"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/home_menu_icon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="메뉴 열기"
+            android:focusable="true"
+            android:padding="10dp"
+            android:src="@drawable/records_ic_menu_white" />
+
+        <TextView
+            android:id="@+id/home_menu_button"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="4dp"
+            android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:text="TrailGO"
+            android:textColor="#FFFFFF"
+            android:textSize="21sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <ScrollView
+        android:id="@+id/home_scroll"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        android:overScrollMode="never"
+        app:layout_constraintBottom_toTopOf="@id/home_bottom_nav"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/home_header">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="16dp"
+            android:paddingTop="14dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="20dp">
+
+            <!-- 1. Monthly banner: the existing mountain / MTB illustration -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="132dp"
+                android:background="@drawable/home_monthly_banner"
+                android:clipToOutline="true">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:importantForAccessibility="no"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/home_monthly_ride_banner" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:padding="18dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="이번 달 라이딩"
+                            android:textColor="#1B2D21"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/home_month_label"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="#2F4535"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/home_month_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="-"
+                        android:textColor="#111B14"
+                        android:textSize="38sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </FrameLayout>
+
+            <!-- 2. Monthly stats: 4 equal cards -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:baselineAligned="false"
+                android:orientation="horizontal">
+
+                <LinearLayout style="@style/HomeStatCard">
+                    <ImageView style="@style/HomeStatIcon" android:src="@drawable/profile_ic_bicycle" />
+                    <TextView style="@style/HomeStatLabel" android:text="라이딩" />
+                    <TextView
+                        android:id="@+id/home_stat_count"
+                        style="@style/HomeStatValue" />
+                </LinearLayout>
+
+                <LinearLayout style="@style/HomeStatCard">
+                    <ImageView style="@style/HomeStatIcon" android:src="@drawable/riding_ic_pin" />
+                    <TextView style="@style/HomeStatLabel" android:text="총 거리" />
+                    <TextView
+                        android:id="@+id/main_dis"
+                        style="@style/HomeStatValue" />
+                </LinearLayout>
+
+                <LinearLayout style="@style/HomeStatCard">
+                    <ImageView style="@style/HomeStatIcon" android:src="@drawable/ic_mountain_home" />
+                    <TextView style="@style/HomeStatLabel" android:text="획득 고도" />
+                    <TextView
+                        android:id="@+id/home_total_height"
+                        style="@style/HomeStatValue" />
+                </LinearLayout>
+
+                <LinearLayout
+                    style="@style/HomeStatCard"
+                    android:layout_marginEnd="0dp">
+                    <ImageView style="@style/HomeStatIcon" android:src="@drawable/riding_ic_clock" />
+                    <TextView style="@style/HomeStatLabel" android:text="총 시간" />
+                    <TextView
+                        android:id="@+id/home_total_time"
+                        style="@style/HomeStatValue" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Honest notes about the data behind the numbers -->
+
+            <TextView
+                android:id="@+id/home_source_note"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textColor="#7A837D"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <!-- 3. Recent rides header -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:gravity="center_vertical"
+                android:minHeight="48dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/home_recent_title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="최근 라이딩"
+                    android:textColor="#161C18"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/home_recent_more"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:contentDescription="라이딩 기록 전체 보기"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:paddingStart="8dp"
+                    android:text="전체 보기  ›"
+                    android:textColor="#1F7A2E"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- 4. Ride cards -->
+            <LinearLayout
+                android:id="@+id/home_recent_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <!-- 5. Quick start: the same action as the round button in the bottom bar -->
+            <LinearLayout
+                android:id="@+id/home_quick_start"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/home_quick_card_bg"
+                android:clickable="true"
+                android:contentDescription="라이딩 시작하기"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:minHeight="72dp"
+                android:orientation="horizontal"
+                android:padding="14dp">
+
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/home_round_icon_bg"
+                    android:importantForAccessibility="no"
+                    android:padding="10dp"
+                    android:src="@drawable/profile_ic_bicycle"
+                    android:tint="#FFFFFF" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="라이딩 시작하기"
+                        android:textColor="#14271B"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="새로운 라이딩을 기록하고 멋진 경로를 남겨보세요."
+                        android:textColor="#55615A"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:importantForAccessibility="no"
+                    android:text="›"
+                    android:textColor="#6B7F70"
+                    android:textSize="24sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+    <include
+        android:id="@+id/home_bottom_nav"
+        layout="@layout/trailgo_bottom_nav"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>

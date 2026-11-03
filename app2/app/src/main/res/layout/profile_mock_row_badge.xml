@@ -1,0 +1,1 @@
+<TextView xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/profile_menu_badge" style="@style/ProfileMockRow" android:drawableStart="@drawable/profile_ic_user" android:text="배지" />

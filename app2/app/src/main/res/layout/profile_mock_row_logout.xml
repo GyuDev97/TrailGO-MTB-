@@ -1,0 +1,1 @@
+<TextView xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/profile_menu_logout" style="@style/ProfileMockRow" android:drawableStart="@drawable/profile_ic_logout" android:text="로그아웃" android:textColor="#E53935" />

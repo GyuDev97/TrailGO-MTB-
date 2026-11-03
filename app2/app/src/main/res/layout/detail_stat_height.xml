@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/DetailStatCell">
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:drawableStart="@drawable/ic_mountain_home" android:drawablePadding="5dp" android:drawableTint="#46A849" android:text="획득 고도" android:textColor="#303632" android:textSize="11sp" android:textStyle="bold" />
+    <TextView android:id="@+id/Riding_godo" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:text="45 m" android:textColor="#111111" android:textSize="17sp" android:textStyle="bold" />
+</LinearLayout>

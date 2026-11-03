@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    tools:context=".ui.dangers.DangerRegisterFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="위험지역 제보"
+            android:textColor="#26312B"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="지도를 움직여 가운데 표시를 위험한 곳에 맞춰 주세요. 주황색 원이 위험 반경입니다."
+            android:textColor="#5F6B64"
+            android:textSize="13sp" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:layout_marginTop="10dp"
+            android:background="#E5E8E6">
+
+            <com.kakao.vectormap.MapView
+                android:id="@+id/hazard_map"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="center"
+                android:contentDescription="선택한 위치"
+                android:src="@drawable/hazard_crosshair" />
+
+            <TextView
+                android:id="@+id/hazard_map_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="#FFFFFF"
+                android:padding="10dp"
+                android:text="지도를 불러오는 중입니다"
+                android:textColor="#44514B"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/hazard_my_location"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_gravity="end|bottom"
+                android:layout_margin="10dp"
+                android:background="#FFFFFF"
+                android:clickable="true"
+                android:elevation="4dp"
+                android:focusable="true"
+                android:gravity="center"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:text="현재 위치"
+                android:textColor="#237A35"
+                android:textStyle="bold" />
+        </FrameLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="위험 유형"
+            android:textColor="#26312B"
+            android:textStyle="bold" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/hazard_type_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            app:singleSelection="true"
+            xmlns:app="http://schemas.android.com/apk/res-auto" />
+
+        <EditText
+            android:id="@+id/hazard_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="제목 (필수, 50자 이내)"
+            android:importantForAutofill="no"
+            android:inputType="text"
+            android:maxLength="50" />
+
+        <EditText
+            android:id="@+id/hazard_description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="상세 설명 (선택, 300자 이내)"
+            android:importantForAutofill="no"
+            android:inputType="textMultiLine"
+            android:maxLength="300"
+            android:minLines="3" />
+
+        <TextView
+            android:id="@+id/hazard_radius_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="위험 반경 30m"
+            android:textColor="#26312B"
+            android:textStyle="bold" />
+
+        <SeekBar
+            android:id="@+id/hazard_radius"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="38"
+            android:progress="4" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="제보는 운영자가 확인하기 전까지 '미검증'으로 다른 라이더에게 표시됩니다."
+            android:textColor="#5F6B64"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/hazard_submit"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="12dp"
+            android:text="제보하기" />
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

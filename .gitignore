@@ -1,0 +1,7 @@
+app2/key.jks
+app2/key.properties
+app2/keyproperties.txt
+*.jks
+*.keystore
+key.properties
+web/bikeapp/src/main/resources/application.properties

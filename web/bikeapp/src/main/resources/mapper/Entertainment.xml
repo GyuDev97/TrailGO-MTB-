@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bike.webapp.mapper.EntertainmentMapper">
+
+	
+	<select id="getBadge" parameterType="String" resultType="com.bike.webapp.dto.Badge">
+		<![CDATA[
+			SELECT * FROM BADGE where BG_NUM IN 
+			(select MISSION.M_BADGE 
+			from MISSION_COMPLETE, MISSION 
+			where MISSION.M_NUM = MISSION_COMPLETE.MC_MISSION and MISSION_COMPLETE.MC_RIDER = #{rider}
+			union
+			SELECT COMPETITION.COMP_BADGE 
+			FROM COMPETITION_STATUS, COMPETITION 
+			where CS_CLUB=2 and CS_RANK <=4 and COMPETITION.COMP_NUM=COMPETITION_STATUS.CS_COMP)
+		]]>
+	</select>
+	
+	<select id="getCustomBadge" parameterType="String" resultType="com.bike.webapp.dto.CustomBadge">
+		select * from custom_badge
+		where cbg_id = #{rr_id}
+		order by cbg_num
+	</select>
+
+	<select id="getMission" resultType="com.bike.webapp.dto.Mission">
+		select * from mission ORDER
+		BY m_num
+	</select>
+
+	<insert id="missionUpload">
+		insert into mission(m_num, m_badge, m_name,m_content, m_type)
+		values(SEQ_MISSIONNUM.nextval, #{m_badge},#{m_name}, #{m_content}, #{m_type})
+	</insert>
+	
+	<insert id="BadgeUpload" parameterType="com.bike.webapp.dto.CustomBadge">
+		insert into custom_badge(cbg_num, cbg_name, cbg_image, cbg_id)
+		values(CUSTOMBADGE_SEQ.nextval, #{cbg_name}, #{cbg_image}, #{cbg_id})
+	</insert>
+	
+	<update id="pricePoint">
+		update rider
+		set r_point = r_point - 200
+		where r_id=#{rr_id}
+	</update>
+
+	<select id="getCompIng" resultType="com.bike.webapp.dto.CompIng">
+		select * from competition
+		where (SUBSTR(comp_period,1,8)) &lt; (select
+		to_char(SYSDATE,'YYYYMMDD') from dual ) AND (SUBSTR(comp_period,9,16))
+		&gt; (select to_char(SYSDATE,'YYYYMMDD') from dual)
+	</select>
+
+
+	<select id="getCompetition"
+		resultType="com.bike.webapp.dto.Competition">
+		select * from competition where (SUBSTR(comp_period,9,16))
+		&lt; (select to_char(SYSDATE,'YYYYMMDD')from dual)
+	</select>
+	
+	<select id="getBadgeCheck" resultType="int">
+      select r_point from rider
+      where r_id = #{rr_id}
+   </select>
+	
+	
+	<!-- 참여한 최근 경쟁전 조회 -->
+	<select id="getRecentComp3" parameterType="String" resultType="com.bike.webapp.dto.Competition">
+		<![CDATA[ select * from ( select distinct COMPETITION.COMP_NUM, COMPETITION.COMP_CONTENT, COMPETITION.COMP_PERIOD, COMPETITION.COMP_IMAGE, COMPETITION.COMP_NAME from RIDING_RECORD, COMPETITION where RIDING_RECORD.RR_COMP=COMPETITION.COMP_NUM and RR_RIDER=#{rider} and RR_COMP is not null order by comp_num desc) where rownum<=3 ]]>
+	</select>
+	
+	<!-- 참여한 최근 경쟁전4 조회 -->
+	<select id="getRecentComp4" parameterType="String" resultType="com.bike.webapp.dto.Competition">
+		<![CDATA[ select * from (select cs_comp, count(cs_comp) cnt from COMPETITION_STATUS group by cs_comp ), (select distinct COMPETITION.COMP_NUM, COMPETITION.COMP_CONTENT, COMPETITION.COMP_PERIOD, COMPETITION.COMP_IMAGE, COMPETITION.COMP_NAME from RIDING_RECORD, COMPETITION where RIDING_RECORD.RR_COMP=COMPETITION.COMP_NUM and RR_RIDER='1801317') 
+					where cs_comp=comp_num and rownum <=4 ]]>
+	</select>
+	
+	<!-- 진행중인 경쟁전 2개 조회 -->
+	<select id="getIngComp2" resultType="com.bike.webapp.dto.Competition">
+		<![CDATA[ select * from ( select * from COMPETITION where to_date(SUBSTR(comp_period,9), 'YYYYMMDD') > sysdate order by comp_num desc ), (select cs_comp, count(cs_comp) cnt from COMPETITION_STATUS group by cs_comp ) where cs_comp=comp_num and rownum<=2 ]]>
+	</select>
+
+	<!-- 종료된 경쟁전 2개 조회 -->
+	<select id="getEndComp2" resultType="com.bike.webapp.dto.Competition">
+		<![CDATA[ select * from ( select * from COMPETITION where to_date(SUBSTR(comp_period,9), 'YYYYMMDD') < sysdate order by comp_num desc ), (select cs_comp, count(cs_comp) cnt from COMPETITION_STATUS group by cs_comp ) where cs_comp=comp_num and rownum<=2 ]]>
+	</select>
+	
+	<!-- 번호로 경쟁전 조회 -->
+	<select id="getComp" parameterType="int" resultType="com.bike.webapp.dto.Competition">
+		<!-- select * from COMPETITION, COURSE, BADGE where COMPETITION.COMP_COURSE = c_num and COMPETITION.COMP_BADGE=BADGE.BG_NUM and comp_num=#{comp_num} -->
+		select * from COMPETITION, COURSE, BADGE, (select cs_comp, count(cs_comp) cnt from COMPETITION_STATUS where CS_COMP=#{comp_num} group by cs_comp) where COMPETITION.COMP_COURSE = c_num and COMPETITION.COMP_BADGE=BADGE.BG_NUM and comp_num=cs_comp
+	</select>
+	
+	<!-- 성공한 미션 조회 -->
+	<select id="getCompleteMission" parameterType="String" resultType="com.bike.webapp.dto.Mission">
+		select * from	(
+			select MISSION.M_NUM,BADGE.BG_IMAGE as m_img, MISSION.M_CONTENT, MISSION.M_NAME as m_name, to_char(MC_TIME, 'YYYY-MM-DD  HH24:MI:SS') as m_time 
+			from MISSION, MISSION_COMPLETE, BADGE 
+			where MISSION.M_NUM = MISSION_COMPLETE.MC_MISSION and MISSION.M_BADGE=BADGE.BG_NUM and MISSION_COMPLETE.MC_RIDER=#{rider}
+			), ( select mc_mission m_num2, count(mc_mission) cnt from mission_complete group by mc_mission )
+		where m_num=m_num2
+	</select>
+	
+	<!-- 미션 상세 정보 조회 -->
+	<select id="getMissionDetail" parameterType="int" resultType="com.bike.webapp.dto.Mission">
+		select a.*, b.bg_image m_img, b.bg_name  from mission a, badge b where a.m_badge=b.bg_num and m_num=#{m_num}
+	</select>
+	
+	<!-- 미션 상세 정보 조회시 성공 인원 조회 -->
+	<select id="getER_List" parameterType="int" resultType="com.bike.webapp.dto.EntertainRider">
+		select bg_num, r_nickname nickname, bg_image bg_img, r_image user_img from rider, badge 
+		where 
+		r_badge=bg_num and r_id in ( select mc_rider from mission_complete where mc_mission=#{m_num} )
+		union
+		select cbg_num bg_num, r_nickname nickname, cbg_image bg_img, r_image user_img from rider, custom_badge 
+		where 
+		r_badge=cbg_num and r_id in ( select mc_rider from mission_complete where mc_mission=#{m_num} )
+	</select>
+	
+	<!-- 전체 회원 조회 -->
+	<select id="getTotalRiders" resultType="int">
+		select count(*) from rider
+	</select>
+	
+	<!-- 미완료 미션 조회 -->
+	<select id="getNoCompleteMission" parameterType="String" resultType="com.bike.webapp.dto.Mission">
+		select sq1.*, bg_image m_img from ( select s1.*, s2.cnt from ( select * from mission where not exists ( select mc_mission from mission_complete where mc_rider=#{rider} and mc_mission=m_num) ) s1,
+		( select m_num, count(mc_num) cnt from mission,mission_complete where m_num=mc_mission(+) group by m_num ) s2 where s1.m_num=s2.m_num ) sq1, badge 
+		where badge.bg_num=m_badge
+	</select>
+	
+	<!-- 순위 조회 -5위까지 -->
+	<select id="getRank5" parameterType="int" resultType="com.bike.webapp.dto.Club">
+		<![CDATA[ select * from (select * from club, COMPETITION_STATUS where cb_num=cs_club and cs_comp=#{comp} order by cs_score desc) where rownum<=5 ]]>
+	</select>
+	
+	<!-- 순위 조회 -전체 -->
+	<select id="getRank" parameterType="int" resultType="com.bike.webapp.dto.Club">
+		select * from club, COMPETITION_STATUS where cb_num=cs_club and cs_comp=#{comp} order by cs_score desc
+	</select>
+</mapper>

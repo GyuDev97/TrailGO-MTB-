@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<aside class="admin-sidebar" th:fragment="sidebar">
+  <a class="admin-brand" href="/admin">
+    <span class="admin-brand-mark" aria-hidden="true"></span>
+    <strong>Trail<span>GO</span></strong>
+    <small>관리자</small>
+  </a>
+  <nav aria-label="관리자 메뉴">
+    <a href="/admin" th:classappend="${activeMenu == 'dashboard'} ? 'is-active'">
+      <span class="nav-icon">D</span><span>대시보드</span>
+    </a>
+    <a href="/admin/hazards" th:classappend="${activeMenu == 'hazards'} ? 'is-active'">
+      <span class="nav-icon">!</span><span>위험지역 관리</span>
+    </a>
+  </nav>
+</aside>
+</body>
+</html>

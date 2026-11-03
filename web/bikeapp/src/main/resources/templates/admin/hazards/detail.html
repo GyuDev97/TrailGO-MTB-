@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="_csrf" th:content="${_csrf.token}"><meta name="_csrf_header" th:content="${_csrf.headerName}">
+  <title th:text="${hazard.title + ' | TrailGO 관리자'}">위험지역 상세</title><link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body class="admin-page" th:attr="data-kakao-key=${kakaoMapAppKey}">
+  <div th:replace="admin/fragments/sidebar :: sidebar"></div>
+  <div class="admin-main">
+    <div th:replace="admin/fragments/header :: header('위험지역 상세')"></div>
+    <main class="admin-content wide-content">
+      <div class="page-title">
+        <div>
+          <a class="back-to-list" href="/admin/hazards">← 목록으로</a>
+          <h1 th:text="${hazard.title}">위험지역</h1>
+          <p><span th:text="|위험지역 #${hazard.id} · ${hazard.reporter}|">제보 정보</span>
+             <span class="source-badge" th:classappend="${hazard.adminSource} ? 'source-admin'" th:text="${hazard.sourceLabel}">출처</span></p>
+        </div>
+        <span class="status-badge large" th:classappend="${hazard.merged} ? 'status-merged' : |status-${#strings.toLowerCase(hazard.status)}|" th:text="${hazard.statusLabel}">대기</span>
+      </div>
+
+      <div class="notice notice-merged" th:if="${hazard.merged}">
+        이 위험지역은 대표 위험지역 <a th:href="|/admin/hazards/${hazard.mergedInto}|" th:text="|#${hazard.mergedInto}|">#0</a>에 병합되었습니다.
+        원본 제보와 제보자 정보는 그대로 보존되며, 라이더 앱에는 대표 위험지역만 전달됩니다. 병합된 항목은 수정할 수 없습니다.
+      </div>
+      <div class="notice notice-admin" th:if="${hazard.adminSource and !hazard.merged}">운영자가 직접 등록해 확인한 위험지역입니다.</div>
+      <div class="notice notice-unverified" th:if="${!hazard.merged and !hazard.adminSource and hazard.status != 'APPROVED'}">라이더가 제보한 내용으로, 승인 전까지 앱에는 '미검증'으로 표시됩니다.</div>
+
+      <div class="detail-layout">
+        <section class="map-panel detail-map-panel">
+          <div id="hazard-map" class="hazard-map" th:attr="data-lat=${hazard.latitude},data-lng=${hazard.longitude}"><div class="map-fallback"><span class="map-marker">!</span><p>지도 위치</p></div>
+            <span class="hazard-marker-data" th:attr="data-lat=${hazard.latitude},data-lng=${hazard.longitude},data-title=${hazard.title},data-type=${hazard.hazardType},data-radius=${hazard.radiusM},data-verified=${hazard.status == 'APPROVED'}"></span>
+          </div>
+          <dl class="coordinate-bar"><div><dt>위도</dt><dd th:text="${hazard.latitude}">0</dd></div><div><dt>경도</dt><dd th:text="${hazard.longitude}">0</dd></div><div><dt>반경</dt><dd th:text="|${hazard.radiusM}m|">30m</dd></div><div><dt>주소</dt><dd th:text="${hazard.address}">주소</dd></div></dl>
+        </section>
+        <aside class="review-panel">
+          <form id="hazard-edit-form" th:attr="data-hazard-id=${hazard.id},data-status=${hazard.status}">
+            <fieldset class="form-fieldset" th:disabled="${!hazard.canEdit}">
+              <div class="form-row"><label for="title">제목</label><input id="title" name="title" th:value="${hazard.title}" maxlength="120"></div>
+              <div class="form-row"><label for="hazardType">위험 유형</label><select id="hazardType" name="hazardType"><th:block th:replace="admin/fragments/hazard-options :: typeOptions(${hazard.hazardType})"></th:block></select></div>
+              <div class="form-row"><label for="description">설명</label><textarea id="description" name="description" rows="5" maxlength="300" th:text="${hazard.description}"></textarea></div>
+              <div class="form-grid"><div class="form-row"><label for="latitude">위도</label><input id="latitude" name="latitude" th:value="${hazard.latitude}"></div><div class="form-row"><label for="longitude">경도</label><input id="longitude" name="longitude" th:value="${hazard.longitude}"></div></div>
+              <div class="form-grid"><div class="form-row"><label for="radiusM">위험 반경(m, 10~200)</label><input id="radiusM" name="radiusM" type="number" min="10" max="200" th:value="${hazard.radiusM}"></div><div class="form-row"><label for="address">주소</label><input id="address" name="address" th:value="${hazard.address}"></div></div>
+            </fieldset>
+            <div class="report-meta"><div><small>제보자</small><strong th:text="${hazard.reporter}">-</strong></div><div><small>확인 수</small><strong th:text="${hazard.confirmCount}">0</strong></div><div><small>신고 수</small><strong th:text="${hazard.reportCount}">0</strong></div></div>
+            <div class="report-meta" th:if="${hazard.approvedBy != null}"><div><small>승인자</small><strong th:text="${hazard.approvedBy}">-</strong></div><div><small>승인 시각</small><strong th:text="${hazard.approvedAt}">-</strong></div></div>
+            <div class="report-meta" th:if="${hazard.status == 'REJECTED' and hazard.rejectionReason != null}"><div><small>거절 사유</small><strong th:text="${hazard.rejectionReason}">-</strong></div></div>
+            <div class="hazard-photo" th:if="${hazard.image != null and !#strings.isEmpty(hazard.image)}"><img th:src="@{'/uploads/danger/' + ${hazard.image}}" alt="위험지역 제보 사진"></div>
+
+            <!-- Buttons come from the same transition table the server enforces (HazardTransitions): no approve button
+                 for something already approved, no action at all on a merged zone. -->
+            <div class="review-actions">
+              <button class="secondary-button" type="button" data-action="save" th:if="${hazard.canEdit}">수정 저장</button>
+              <button class="danger-button" type="button" data-action="reject" th:if="${hazard.canReject}">거절</button>
+              <button class="primary-button" type="button" data-action="approve" th:if="${hazard.canApprove}">승인</button>
+              <button class="secondary-button" type="button" data-action="hide" th:if="${hazard.canHide}">숨김</button>
+              <button class="secondary-button" type="button" data-action="restore" th:if="${hazard.canRestore}">숨김 해제 · 다시 검토</button>
+            </div>
+            <p class="state-note" th:if="${hazard.status == 'APPROVED' and !hazard.merged}">✓ 승인됨 — 이미 승인된 위험지역입니다. 노출을 중단하려면 '숨김'을 사용하세요.</p>
+            <p class="state-note" th:if="${hazard.status == 'REJECTED' and !hazard.merged}">거절됨 — 앱에는 표시되지 않습니다.</p>
+            <p class="state-note" th:if="${hazard.status == 'INACTIVE' and !hazard.merged}">숨김 — 앱에는 표시되지 않습니다.</p>
+            <button class="merge-button" type="button" data-action="duplicates" th:if="${!hazard.merged}">중복 후보 확인 · 병합</button>
+            <div id="duplicate-list" class="duplicate-list" hidden></div>
+          </form>
+        </aside>
+      </div>
+
+      <section class="content-panel" th:if="${!#lists.isEmpty(mergedChildren)}">
+        <h2 class="panel-title" th:text="|이 위험지역에 병합된 원본 ${#lists.size(mergedChildren)}건|">병합된 원본</h2>
+        <div class="table-scroll">
+          <table class="hazard-table">
+            <thead><tr><th>번호</th><th>유형</th><th>제목</th><th>제보자</th><th>등록일</th><th>설명</th></tr></thead>
+            <tbody>
+              <tr th:each="child : ${mergedChildren}" th:attr="data-href=|/admin/hazards/${child.id}|">
+                <td th:text="|#${child.id}|">#0</td><td th:text="${child.hazardTypeLabel}">유형</td><td th:text="${child.title}">제목</td>
+                <td th:text="${child.reporter}">제보자</td><td th:text="${child.createdAt}">일시</td><td th:text="${child.description}">설명</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="/admin/js/admin.js"></script>
+</body></html>

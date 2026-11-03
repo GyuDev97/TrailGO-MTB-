@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- The six types the app offers. A zone stored with an older type keeps it as an extra option, so saving does not silently change it. -->
+<th:block th:fragment="typeOptions(selected)">
+  <option th:each="t : ${T(com.bike.webapp.hazard.HazardType).values()}"
+          th:value="${t.name()}" th:text="${T(com.bike.webapp.hazard.HazardLabels).type(t.name())}"
+          th:selected="${t.name() == selected}">유형</option>
+  <option th:if="${selected != null and !#strings.isEmpty(selected) and T(com.bike.webapp.hazard.HazardType).parse(selected) == null}"
+          th:value="${selected}" th:text="${T(com.bike.webapp.hazard.HazardLabels).type(selected) + ' (이전 유형)'}" selected>이전 유형</option>
+</th:block>
+</body>
+</html>

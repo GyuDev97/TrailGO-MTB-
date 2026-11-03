@@ -1,0 +1,1 @@
+<TextView xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/profile_menu_courses" style="@style/ProfileMockRow" android:drawableStart="@drawable/drawer_ic_map_custom" android:text="나의 코스" />

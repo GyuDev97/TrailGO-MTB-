@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bike.webapp.mapper.MemberMapper">
+
+	<!-- 회원가입 -->
+	<select id="memberInsert" resultType="com.bike.webapp.dto.Member">
+		insert into rider(r_id,
+		r_pw, r_name, r_nickname, r_birth, r_phone, r_gender, r_addr, r_addr2,
+		r_image, r_type)
+		values (#{r_id,jdbcType=VARCHAR},
+		#{r_pw,jdbcType=VARCHAR},
+		#{r_name,jdbcType=VARCHAR},
+		#{r_nickname,jdbcType=VARCHAR},
+		TO_DATE(#{r_birth,jdbcType=DATE}, 'YYYY-MM-DD'),
+		#{r_phone,jdbcType=VARCHAR},
+		#{r_gender,jdbcType=VARCHAR},
+		#{r_addr,jdbcType=VARCHAR},
+		#{r_addr2,jdbcType=VARCHAR}, #{r_image,jdbcType=VARCHAR},
+		#{r_type,jdbcType=INTEGER})
+	</select>
+
+	<select id="regRepair_Shop" parameterType="com.bike.webapp.dto.Repair_Shop">
+		insert into Repair_shop(rs_id, rs_info, rs_holiday, rs_time, rs_lat, rs_lon) values(#{rs_id}, #{rs_info}, #{rs_holiday}, '09001800', #{rs_lat}, #{rs_lon})
+	</select>
+	<select id="getRidingRecord" parameterType="String" resultType="com.bike.webapp.dto.RidingRecord">
+		select * from riding_record where rr_rider = #{rr_rider} order by rr_num desc
+	</select>
+
+	<select id="getCourse" resultType="com.bike.webapp.dto.Course">
+		select * from course order by c_num
+	</select>
+
+	<select id="getScrapCourse" parameterType="String"
+		resultType="com.bike.webapp.dto.Course">
+		select * from course where exists (select ss_course from
+		SCRAP_STATUS where SS_RIDER=#{rr_rider} and
+		course.C_NUM=SCRAP_STATUS.SS_COURSE)
+	</select>
+
+	<insert id="postScrapCourse">
+		INSERT INTO SCRAP_STATUS(SS_NUM, SS_RIDER, SS_COURSE)
+		VALUES(SEQ_SCRAPSTATUS.nextval, #{ss_rider}, #{ss_course})
+	</insert>
+
+	<delete id="deleteScrapCourse">
+		DELETE FROM SCRAP_STATUS WHERE SS_COURSE=#{ss_course}
+		AND SS_RIDER=#{ss_rider}
+	</delete>
+
+	<!-- 데이터가 많지 않아 현재 진행상황(대기, 인정, 불가) 반영하지않고 모두 들고옴 후에 select * from DANGEROUS_AREA 
+		where DA_STATUS=1 로 수정해야함 -->
+	<select id="getUserDangerousArea" parameterType="String"
+		resultType="com.bike.webapp.dto.DangerousArea">
+		select * from dangerous_area where DA_RIDER = #{rr_rider}
+	</select>
+
+	<delete id="deleteDangerousArea" parameterType="Integer">
+		DELETE
+		dangerous_area WHERE DA_NUM=#{da_num}
+	</delete>
+
+	<insert id="postNoDanger"
+		parameterType="com.bike.webapp.dto.No_Danger">
+		INSERT INTO NO_DANGER(ND_NUM, ND_RIDER, ND_CONTENT,
+		ND_IMAGE) values(#{nd_num}, #{nd_rider}, #{nd_content}, #{nd_image})
+	</insert>
+	<insert id="writeDao">
+		insert into MARKET_VISION (num, day, content) values
+		(vision_seq.nextval,
+		#{param1}, #{param2})
+	</insert>
+
+	<delete id="deleteDao">
+		delete from MARKET_VISION where num = #{param1}
+	</delete>
+</mapper>

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="_csrf" th:content="${_csrf.token}"><meta name="_csrf_header" th:content="${_csrf.headerName}">
+  <title>위험지역 직접 등록 | TrailGO 관리자</title><link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body class="admin-page" th:attr="data-kakao-key=${kakaoMapAppKey}">
+  <div th:replace="admin/fragments/sidebar :: sidebar"></div>
+  <div class="admin-main">
+    <div th:replace="admin/fragments/header :: header('위험지역 직접 등록')"></div>
+    <main class="admin-content wide-content">
+      <div class="page-title"><div><a class="back-to-list" href="/admin/hazards">← 목록으로</a><h1>위험지역 직접 등록</h1>
+        <p>운영자가 직접 등록한 위험지역은 즉시 활성화되고 '운영자 확인' 위험지역으로 라이더 앱에 전달됩니다. 등록 전에 위치와 내용을 다시 확인해 주세요.</p></div></div>
+      <div class="detail-layout">
+        <section class="map-panel detail-map-panel">
+          <div id="create-map" class="hazard-map">
+            <div class="map-fallback"><span class="map-marker">!</span><p>지도 키(trailgo.maps.kakao-app-key)를 설정하면 지도에서 위치를 고를 수 있습니다. 키가 없으면 위도·경도를 직접 입력하세요.</p></div>
+          </div>
+          <p class="map-help">지도를 클릭해 위험지역의 위치를 선택하세요. 주황 원이 위험 반경입니다.</p>
+        </section>
+        <aside class="review-panel">
+          <form id="hazard-create-form" novalidate>
+            <div class="form-grid">
+              <div class="form-row"><label for="latitude">위도</label><input id="latitude" name="latitude" inputmode="decimal" required></div>
+              <div class="form-row"><label for="longitude">경도</label><input id="longitude" name="longitude" inputmode="decimal" required></div>
+            </div>
+            <div class="form-row"><label for="hazardType">위험 유형</label>
+              <select id="hazardType" name="type" required><option value="">유형 선택</option><th:block th:replace="admin/fragments/hazard-options :: typeOptions(null)"></th:block></select></div>
+            <div class="form-row"><label for="title">제목 (50자 이내)</label><input id="title" name="title" maxlength="50" required></div>
+            <div class="form-row"><label for="description">설명 (300자 이내)</label><textarea id="description" name="description" rows="4" maxlength="300"></textarea></div>
+            <div class="form-grid">
+              <div class="form-row"><label for="radiusM">위험 반경 (m, 10~200)</label><input id="radiusM" name="radiusM" type="number" min="10" max="200" value="30"></div>
+              <div class="form-row"><label for="address">주소 (선택)</label><input id="address" name="address" maxlength="200"></div>
+            </div>
+            <div id="create-message" class="form-message" role="alert" hidden></div>
+            <div id="duplicate-list" class="duplicate-list" hidden></div>
+            <div class="review-actions two">
+              <button class="secondary-button" type="button" data-action="check-duplicates">중복 확인</button>
+              <button class="primary-button" type="button" data-action="create">등록</button>
+            </div>
+          </form>
+        </aside>
+      </div>
+    </main>
+  </div>
+  <script src="/admin/js/admin.js"></script>
+</body></html>

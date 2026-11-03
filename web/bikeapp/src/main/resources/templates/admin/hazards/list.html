@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="_csrf" th:content="${_csrf.token}"><meta name="_csrf_header" th:content="${_csrf.headerName}">
+  <title>위험지역 관리 | TrailGO 관리자</title><link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body class="admin-page" th:attr="data-kakao-key=${kakaoMapAppKey}">
+  <div th:replace="admin/fragments/sidebar :: sidebar"></div>
+  <div class="admin-main">
+    <div th:replace="admin/fragments/header :: header('위험지역 관리')"></div>
+    <main class="admin-content wide-content">
+      <div class="page-title">
+        <div><h1>위험지역 관리</h1><p>사용자가 제보한 위험지역을 검토하고, 운영자가 직접 등록·병합합니다.</p></div>
+        <div class="title-actions">
+          <a class="secondary-button" href="/admin/hazards/merges">병합 이력</a>
+          <a class="primary-button" href="/admin/hazards/new">위험지역 직접 등록</a>
+        </div>
+      </div>
+      <section class="stats-grid compact-stats" aria-label="위험지역 통계">
+        <article><span class="stat-icon neutral">Σ</span><small>전체 제보</small><strong th:text="${stats.total}">0</strong></article>
+        <article><span class="stat-icon warning">!</span><small>승인 대기</small><strong th:text="${stats.pending}">0</strong></article>
+        <article><span class="stat-icon info">↻</span><small>검토 중</small><strong th:text="${stats.reviewing}">0</strong></article>
+        <article><span class="stat-icon success">✓</span><small>승인됨</small><strong th:text="${stats.approved}">0</strong></article>
+        <article><span class="stat-icon danger">×</span><small>거절됨</small><strong th:text="${stats.rejected}">0</strong></article>
+      </section>
+      <form class="filter-bar" method="get" action="/admin/hazards">
+        <label class="search-field"><span class="sr-only">검색</span><input name="keyword" th:value="${keyword}" placeholder="위험지역, 위치, 제보자 검색"></label>
+        <select name="hazardType" aria-label="위험 유형">
+          <option value="">전체 유형</option>
+          <option th:each="t : ${T(com.bike.webapp.hazard.HazardType).values()}" th:value="${t.name()}"
+                  th:text="${T(com.bike.webapp.hazard.HazardLabels).type(t.name())}" th:selected="${hazardType == t.name()}">유형</option>
+        </select>
+        <select name="status" aria-label="상태">
+          <option value="">전체 상태</option>
+          <option value="PENDING" th:selected="${status == 'PENDING'}">승인 대기</option>
+          <option value="REVIEWING" th:selected="${status == 'REVIEWING'}">검토 중</option>
+          <option value="APPROVED" th:selected="${status == 'APPROVED'}">승인됨</option>
+          <option value="REJECTED" th:selected="${status == 'REJECTED'}">거절됨</option>
+          <option value="INACTIVE" th:selected="${status == 'INACTIVE'}">숨김</option>
+          <option value="MERGED" th:selected="${status == 'MERGED'}">병합됨</option>
+        </select>
+        <select name="source" aria-label="등록 출처">
+          <option value="">전체 출처</option>
+          <option value="USER" th:selected="${source == 'USER'}">사용자 제보</option>
+          <option value="ADMIN" th:selected="${source == 'ADMIN'}">운영자 등록</option>
+        </select>
+        <input type="date" name="dateFrom" th:value="${dateFrom}" aria-label="등록일 시작">
+        <input type="date" name="dateTo" th:value="${dateTo}" aria-label="등록일 종료">
+        <select name="reported" aria-label="신고 누적 여부"><option value="">신고 전체</option><option value="yes" th:selected="${reported == 'yes'}">신고 있음</option><option value="no" th:selected="${reported == 'no'}">신고 없음</option></select>
+        <select name="sort" aria-label="정렬"><option value="newest" th:selected="${sort == 'newest'}">최신순</option><option value="oldest" th:selected="${sort == 'oldest'}">오래된순</option></select>
+        <button class="primary-button compact" type="submit">조회</button>
+      </form>
+      <div class="selection-bar" id="selection-bar">
+        <span id="selection-count">0건 선택</span>
+        <button class="secondary-button compact" type="button" id="merge-selected" disabled>선택한 위험지역 병합</button>
+        <small>같은 위험을 가리키는 항목 2건 이상을 선택하면 하나의 대표 위험지역으로 병합할 수 있습니다. (병합된 항목은 선택할 수 없습니다)</small>
+      </div>
+      <div class="hazard-workspace">
+        <section class="content-panel list-panel">
+          <div class="table-scroll">
+            <table class="hazard-table" id="hazard-table">
+              <thead><tr><th class="select-cell"></th><th>상태</th><th>유형</th><th>제목</th><th>출처</th><th>위치</th><th>반경</th><th>제보자</th><th>신고</th></tr></thead>
+              <tbody>
+                <tr th:each="hazard : ${hazards}" th:attr="data-href=|/admin/hazards/${hazard.id}|">
+                  <td class="select-cell"><input type="checkbox" class="row-select" th:value="${hazard.id}" th:disabled="${hazard.merged}" th:attr="aria-label=|#${hazard.id} 선택|"></td>
+                  <td><span class="status-badge" th:classappend="${hazard.merged} ? 'status-merged' : |status-${#strings.toLowerCase(hazard.status)}|" th:text="${hazard.statusLabel}">대기</span></td>
+                  <td th:text="${hazard.hazardTypeLabel}">기타</td>
+                  <td class="title-cell"><span th:text="${hazard.title}">제목</span><small class="merged-note" th:if="${hazard.merged}" th:text="|→ 대표 #${hazard.mergedInto}|"></small></td>
+                  <td><span class="source-badge" th:classappend="${hazard.adminSource} ? 'source-admin'" th:text="${hazard.sourceLabel}">출처</span></td>
+                  <td th:text="${hazard.address}">위치</td>
+                  <td th:text="|${hazard.radiusM}m|">30m</td>
+                  <td th:text="${hazard.reporter}">제보자</td>
+                  <td th:text="${hazard.reportCount}">0</td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(hazards)}"><td class="empty-cell" colspan="9">조건에 맞는 위험지역이 없습니다.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section class="map-panel" th:with="first=${#lists.isEmpty(hazards) ? null : hazards[0]}">
+          <div id="hazard-map" class="hazard-map" th:attr="data-lat=${first != null ? first.latitude : ''},data-lng=${first != null ? first.longitude : ''}">
+            <div class="map-fallback"><span class="map-marker">!</span><p>지도 키를 설정하면 실제 위치가 표시됩니다.</p></div>
+            <span class="hazard-marker-data" th:each="hazard : ${hazards}" th:unless="${hazard.merged}"
+                  th:attr="data-lat=${hazard.latitude},data-lng=${hazard.longitude},data-title=${hazard.title},data-type=${hazard.hazardType},data-radius=${hazard.radiusM},data-verified=${hazard.status == 'APPROVED'}"></span>
+          </div>
+          <div class="map-legend"><span class="legend-unverified">주황: 승인 전(미검증)</span><span class="legend-verified">초록: 운영자 확인</span></div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script src="/admin/js/admin.js"></script>
+</body></html>

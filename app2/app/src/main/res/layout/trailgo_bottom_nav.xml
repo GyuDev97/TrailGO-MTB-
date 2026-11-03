@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="64dp"
+    android:background="#FFFFFF"
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:paddingStart="6dp"
+    android:paddingEnd="6dp">
+
+    <TextView
+        android:id="@+id/bottom_nav_home"
+        style="@style/TrailGoBottomNavItem"
+        android:drawableTop="@drawable/drawer_ic_home_custom"
+        android:text="홈" />
+
+    <TextView
+        android:id="@+id/bottom_nav_records"
+        style="@style/TrailGoBottomNavItem"
+        android:drawableTop="@drawable/drawer_ic_bike_custom"
+        android:text="기록" />
+
+    <LinearLayout
+        android:id="@+id/bottom_nav_ride"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <ImageView
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:background="@drawable/trailgo_nav_ride_bg"
+            android:padding="9dp"
+            android:src="@drawable/profile_ic_bicycle"
+            android:tint="#FFFFFF" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:text="주행"
+            android:textColor="#858B86"
+            android:textSize="9sp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/bottom_nav_course"
+        style="@style/TrailGoBottomNavItem"
+        android:drawableTop="@drawable/drawer_ic_map_custom"
+        android:text="코스" />
+
+    <TextView
+        android:id="@+id/bottom_nav_profile"
+        style="@style/TrailGoBottomNavItem"
+        android:drawableTop="@drawable/profile_ic_user"
+        android:text="프로필" />
+</LinearLayout>

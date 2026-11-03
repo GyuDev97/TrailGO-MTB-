@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bike.webapp.mapper.HazardAppMapper">
+
+  <resultMap id="hazardRowMap" type="com.bike.webapp.dto.HazardRow">
+    <id property="id" column="id"/>
+    <result property="reporter" column="reporter"/>
+    <result property="latitude" column="latitude"/>
+    <result property="longitude" column="longitude"/>
+    <result property="radiusM" column="radius_m"/>
+    <result property="address" column="address"/>
+    <result property="description" column="description"/>
+    <result property="title" column="title"/>
+    <result property="hazardType" column="hazard_type"/>
+    <result property="status" column="status"/>
+    <result property="createdAt" column="created_at"/>
+    <result property="updatedAt" column="updated_at"/>
+  </resultMap>
+
+  <!-- Same status rule as HazardAdmin.xml: rows without a review row fall back to the legacy da_status. -->
+  <sql id="statusExpression">
+    COALESCE(r.status,
+      CASE d.da_status
+        WHEN '1' THEN 'APPROVED'
+        WHEN '2' THEN 'REJECTED'
+        WHEN '3' THEN 'REVIEWING'
+        WHEN '4' THEN 'INACTIVE'
+        ELSE 'PENDING'
+      END)
+  </sql>
+
+  <sql id="columns">
+    d.idx AS id,
+    d.da_rider AS reporter,
+    d.da_lat AS latitude,
+    d.da_lon AS longitude,
+    d.da_radius_m AS radius_m,
+    d.da_addr AS address,
+    d.da_content AS description,
+    COALESCE(NULLIF(r.title, ''), LEFT(COALESCE(d.da_content, '위험지역 제보'), 50)) AS title,
+    COALESCE(r.hazard_type, 'OTHER') AS hazard_type,
+    <include refid="statusExpression"/> AS status,
+    COALESCE(r.created_at, d.create_date, CURRENT_TIMESTAMP) AS created_at,
+    COALESCE(r.updated_at, d.create_date, CURRENT_TIMESTAMP) AS updated_at
+  </sql>
+
+  <select id="findVisibleInBox" resultMap="hazardRowMap">
+    SELECT <include refid="columns"/>
+    FROM dangerous_area d
+    LEFT JOIN trailgo_hazard_review r ON r.hazard_id = d.idx
+    WHERE d.da_lat BETWEEN #{minLat} AND #{maxLat}
+      AND d.da_lon BETWEEN #{minLon} AND #{maxLon}
+      AND COALESCE(r.is_active, 1) = 1
+      AND r.merged_into IS NULL
+      AND (r.expires_at IS NULL OR r.expires_at &gt; CURRENT_TIMESTAMP)
+      AND <include refid="statusExpression"/> IN ('PENDING', 'REVIEWING', 'APPROVED')
+    ORDER BY POW(d.da_lat - #{lat}, 2) + POW(d.da_lon - #{lon}, 2) ASC
+    LIMIT #{limit}
+  </select>
+
+  <select id="findHiddenIdsInBox" resultType="int">
+    SELECT d.idx
+    FROM dangerous_area d
+    LEFT JOIN trailgo_hazard_review r ON r.hazard_id = d.idx
+    WHERE d.da_lat BETWEEN #{minLat} AND #{maxLat}
+      AND d.da_lon BETWEEN #{minLon} AND #{maxLon}
+      AND NOT (COALESCE(r.is_active, 1) = 1
+               AND r.merged_into IS NULL
+               AND (r.expires_at IS NULL OR r.expires_at &gt; CURRENT_TIMESTAMP)
+               AND <include refid="statusExpression"/> IN ('PENDING', 'REVIEWING', 'APPROVED'))
+    LIMIT #{limit}
+  </select>
+
+  <select id="findById" resultMap="hazardRowMap">
+    SELECT <include refid="columns"/>
+    FROM dangerous_area d
+    LEFT JOIN trailgo_hazard_review r ON r.hazard_id = d.idx
+    WHERE d.idx = #{id}
+  </select>
+
+  <insert id="insertDanger" useGeneratedKeys="true" keyProperty="row.id" keyColumn="idx">
+    INSERT INTO dangerous_area (da_rider, da_latitude, da_longitude, da_addr, da_image, da_content, da_status, da_radius_m)
+    VALUES (#{row.reporter}, #{lat}, #{lon}, '', '', #{row.description}, '0', #{row.radiusM})
+  </insert>
+
+  <insert id="insertReview">
+    INSERT INTO trailgo_hazard_review
+      (hazard_id, title, hazard_type, status, created_at, updated_at, confirm_count, report_count, is_active)
+    VALUES
+      (#{id}, #{title}, #{type}, 'PENDING', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 0, 1)
+  </insert>
+
+  <update id="updateDanger">
+    UPDATE dangerous_area SET da_content = #{description}, da_radius_m = #{radiusM} WHERE idx = #{id}
+  </update>
+
+  <update id="updateReview">
+    UPDATE trailgo_hazard_review SET title = #{title}, hazard_type = #{type}, updated_at = CURRENT_TIMESTAMP
+    WHERE hazard_id = #{id}
+  </update>
+
+  <update id="deactivateReview">
+    UPDATE trailgo_hazard_review SET status = 'INACTIVE', is_active = 0, updated_at = CURRENT_TIMESTAMP
+    WHERE hazard_id = #{id}
+  </update>
+
+  <update id="deactivateLegacy">
+    UPDATE dangerous_area SET da_status = '4' WHERE idx = #{id}
+  </update>
+</mapper>

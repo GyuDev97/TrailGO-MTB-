@@ -1,0 +1,21 @@
+# Project-wide Gradle settings.
+# IDE (e.g. Android Studio) users:
+# Gradle settings configured through the IDE *will override*
+# any settings specified in this file.
+# For more details on how to configure your build environment visit
+# http://www.gradle.org/docs/current/userguide/build_environment.html
+# Specifies the JVM arguments used for the daemon process.
+# The setting is particularly useful for tweaking memory settings.
+org.gradle.jvmargs=-Xmx2048m
+org.gradle.java.home=C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.10.7-hotspot
+
+TRAILGO_SERVER_BASE_URL=
+GYUVIS_BASE_URL=
+#GYUVIS_BASE_URL_DEBUG=http://your-gyuvis-development-host/
+#GYUVIS_BASE_URL_RELEASE=https://your-production-host/
+RIDE_ASSISTANT_TEST_MODE=true
+GYUVIS_API_TOKEN=
+android.useAndroidX=true
+android.enableJetifier=true
+android.nonFinalResIds=false
+KAKAO_APP_KEY=

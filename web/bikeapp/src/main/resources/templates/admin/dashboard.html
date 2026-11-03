@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="_csrf" th:content="${_csrf.token}"><meta name="_csrf_header" th:content="${_csrf.headerName}">
+  <title>대시보드 | TrailGO 관리자</title>
+  <link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body class="admin-page">
+  <div th:replace="admin/fragments/sidebar :: sidebar"></div>
+  <div class="admin-main">
+    <div th:replace="admin/fragments/header :: header('대시보드')"></div>
+    <main class="admin-content">
+      <div class="page-title"><div><h1>대시보드</h1><p>위험지역 제보와 검수 현황을 확인합니다.</p></div><a class="primary-button compact" href="/admin/hazards">위험지역 관리</a></div>
+      <section class="stats-grid" aria-label="위험지역 통계">
+        <article><span class="stat-icon neutral">Σ</span><small>전체 제보</small><strong th:text="${stats.total}">0</strong></article>
+        <article><span class="stat-icon warning">!</span><small>검토 대기</small><strong th:text="${stats.pending}">0</strong></article>
+        <article><span class="stat-icon info">↻</span><small>검토 중</small><strong th:text="${stats.reviewing}">0</strong></article>
+        <article><span class="stat-icon success">✓</span><small>승인 완료</small><strong th:text="${stats.approved}">0</strong></article>
+        <article><span class="stat-icon danger">×</span><small>반려됨</small><strong th:text="${stats.rejected}">0</strong></article>
+      </section>
+      <section class="content-panel">
+        <div class="panel-heading"><div><h2>최근 제보</h2><p>최근 등록되거나 갱신된 위험지역입니다.</p></div><a href="/admin/hazards">전체 보기</a></div>
+        <div class="table-scroll">
+          <table class="hazard-table">
+            <thead><tr><th>상태</th><th>유형</th><th>제목</th><th>위치</th><th>제보자</th><th>확인</th></tr></thead>
+            <tbody>
+              <tr th:each="hazard : ${recentHazards}" th:onclick="|location.href='/admin/hazards/${hazard.id}'|">
+                <td><span class="status-badge" th:classappend="|status-${#strings.toLowerCase(hazard.status)}|" th:text="${hazard.statusLabel}">대기</span></td>
+                <td th:text="${hazard.hazardTypeLabel}">기타</td><td class="title-cell" th:text="${hazard.title}">제목</td>
+                <td th:text="${hazard.address}">위치</td><td th:text="${hazard.reporter}">제보자</td><td th:text="${hazard.confirmCount}">0</td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(recentHazards)}"><td class="empty-cell" colspan="6">등록된 위험지역이 없습니다.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="/admin/js/admin.js"></script>
+</body>
+</html>

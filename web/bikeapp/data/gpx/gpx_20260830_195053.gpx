@@ -1,0 +1,13 @@
+<gpxInfo version="1.1" creator="TrailGO" xmlns="http://www.topografix.com/GPX/1/1">
+   <metadata>
+      <bounds maxLat="37.48632616" maxLon="126.92536507" minLat="37.48632616" minLon="126.92536507"/>
+      <desc>TrailGO</desc>
+   </metadata>
+   <trk>
+      <trkseg>
+         <trkpt lat="37.48632616" lon="126.92536507">
+            <ele>59.01898193359375</ele>
+         </trkpt>
+      </trkseg>
+   </trk>
+</gpxInfo>

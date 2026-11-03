@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<header class="admin-header" th:fragment="header(title)">
+  <button class="sidebar-toggle" type="button" aria-label="메뉴 열기" title="메뉴 열기">☰</button>
+  <strong th:text="${title}">관리자</strong>
+  <div class="admin-account">
+    <span class="account-avatar">A</span>
+    <span>관리자</span>
+    <form th:action="@{/logout}" method="post"><button type="submit">로그아웃</button></form>
+  </div>
+</header>
+</body>
+</html>

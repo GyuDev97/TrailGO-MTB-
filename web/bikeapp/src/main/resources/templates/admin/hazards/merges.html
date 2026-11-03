@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>병합 이력 | TrailGO 관리자</title><link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body class="admin-page">
+  <div th:replace="admin/fragments/sidebar :: sidebar"></div>
+  <div class="admin-main">
+    <div th:replace="admin/fragments/header :: header('병합 이력')"></div>
+    <main class="admin-content wide-content">
+      <div class="page-title"><div><a class="back-to-list" href="/admin/hazards">← 목록으로</a><h1>병합 이력</h1><p>위험지역 병합 기록입니다. 병합된 원본은 삭제되지 않고 그대로 보존됩니다.</p></div></div>
+      <section class="content-panel">
+        <div class="table-scroll">
+          <table class="hazard-table">
+            <thead><tr><th>병합 시각</th><th>처리 관리자</th><th>대표 위험지역</th><th>병합된 위험지역</th><th>병합 전 (원본)</th><th>대표 변경 전 → 후</th></tr></thead>
+            <tbody>
+              <tr th:each="merge : ${merges}">
+                <td th:text="${#temporals.format(merge.mergedAt, 'yyyy-MM-dd HH:mm')}">시각</td>
+                <td th:text="${merge.adminId}">admin</td>
+                <td><a th:href="|/admin/hazards/${merge.canonicalId}|" th:text="|#${merge.canonicalId} ${merge.canonicalTitle}|">대표</a></td>
+                <td><a th:href="|/admin/hazards/${merge.mergedId}|" th:text="|#${merge.mergedId} ${merge.mergedTitle}|">원본</a></td>
+                <td><details><summary>보기</summary><pre class="snapshot" th:text="${merge.mergedBefore}">{}</pre></details></td>
+                <td><details><summary>보기</summary><pre class="snapshot" th:text="${merge.canonicalBefore}">{}</pre><pre class="snapshot" th:text="${merge.canonicalAfter}">{}</pre></details></td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(merges)}"><td class="empty-cell" colspan="6">병합 이력이 없습니다.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="/admin/js/admin.js"></script>
+</body></html>

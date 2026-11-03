@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bike.webapp.mapper.MyPageMapper">
+
+	<select id="getRR" parameterType="String" resultType="com.bike.webapp.dto.RidingRecord">
+		SELECT * FROM RIDING_RECORD WHERE RR_RIDER=#{rider}
+	</select>
+	
+	<select id="getBadge" parameterType="String" resultType="com.bike.webapp.dto.Badge">
+		<![CDATA[
+			SELECT * FROM BADGE where BG_NUM IN 
+			(select MISSION.M_BADGE 
+			from MISSION_COMPLETE, MISSION 
+			where MISSION.M_NUM = MISSION_COMPLETE.MC_MISSION and MISSION_COMPLETE.MC_RIDER = #{rider}
+			union
+			SELECT COMPETITION.COMP_BADGE 
+			FROM COMPETITION_STATUS, COMPETITION 
+			where CS_CLUB=2 and CS_RANK <=4 and COMPETITION.COMP_NUM=COMPETITION_STATUS.CS_COMP)
+		]]>
+	</select>
+	
+	<!-- 사용자 정보 조회 -->
+	<select id="getUserInfo" parameterType="String" resultType="com.bike.webapp.dto.Rider">
+		select * from
+		( select r_id, r_nickname, r_image, r_point, to_char(r_regdate, 'YYYY-MM-DD HH24:MI:SS') r_regdate, nvl(bg_image,'null.jpg') badge
+		from rider, badge where r_badge=bg_num(+) and r_nickname=#{nickname} ),
+		( select rr_rider, sum(rr_distance) total from riding_record, rider where r_id=rr_rider and r_nickname=#{nickname} group by rr_rider )
+		where r_id = rr_rider
+	</select>
+	
+	<!-- 사용자 닉네임 조회 -->
+	<select id="getUserNickname" parameterType="String" resultType="String" >
+		select R_NICKNAME  from rider where r_id=#{r_id}
+	</select>
+	
+	<!-- 사용자 총주행거리 조회 -->
+	<select id="getUserTotalDistance" parameterType="String" resultType="double">
+		select TRUNC(sum(RR_DISTANCE)/1000,2) from riding_record where rr_rider=#{r_id}
+	</select>
+	
+	<!-- 클럽게시판 게시글 조회 -->
+	<select id="getUserClubPost" parameterType="String" resultType="com.bike.webapp.dto.Board">
+		<![CDATA[ select b_num, b_title, to_char(b_day, 'YYYY-MM-DD HH24:MI:SS') customDate from BOARD where B_RIDER=#{r_id} and B_CLUB<>999 order by b_day desc ]]>
+	</select>
+	
+	<!-- SNS 게시글 조회 -->
+	<select id="getUserSNSPost" parameterType="String" resultType="com.bike.webapp.dto.Board">
+		select b_num, b_content, to_char(b_day, 'YYYY-MM-DD HH24:MI:SS') customDate from BOARD where B_RIDER=#{r_id} and B_CLUB=999 order by b_day desc
+	</select>
+	
+	<!-- 댓글 조회 -->
+	<select id="getUserReply" parameterType="String" resultType="com.bike.webapp.dto.Reply">
+		select re_num, re_board, re_content, to_char(re_day, 'YYYY-MM-DD HH24:MI:SS') re_day from reply where re_rider=#{r_id} order by re_day desc
+	</select>
+	
+	<!-- 원본 게시글 조회 -->
+	<select id="getOriginPost" parameterType="int" resultType="com.bike.webapp.dto.Board">
+		select b_title, b_content, b_day, b_file, b.R_NICKNAME b_rider, b.R_IMAGE b_img, to_char(b_day, 'YYYY-MM-DD HH24:MI:SS') customDate from BOARD a, RIDER b where r_id=b_rider and b_num=#{b_num}
+	</select>
+	
+	<!-- 대표배지 변경 -->
+	<update id="changeRiderBadge" parameterType="com.bike.webapp.dto.Rider">
+		update rider set r_badge=#{badge} where r_id=#{r_id}
+	</update>
+	
+	<!-- 사용자 닉네임, 이미지 조회 -->
+	<select id="getRider" parameterType="String" resultType="com.bike.webapp.dto.Rider">
+		select r_nickname, r_image from rider where r_id=#{r_id}
+	</select>
+	
+	<!-- 리뷰 조회 -->
+	<select id="getReply" parameterType="int" resultType="com.bike.webapp.dto.Reply">
+		select re_content, to_char(re_day, 'YYYY/MM/DD HH24:MI:SS') re_day, r_nickname re_rider, bg_image r_image from reply, rider, badge where re_board=#{re_board} and re_rider=r_id and r_badge=bg_num
+	</select>
+</mapper>
+

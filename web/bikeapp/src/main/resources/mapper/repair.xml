@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bike.webapp.mapper.RepairMapper">
+	
+	<!-- 사용자 타입 조회 0:일반 1:정비소 2:관리자 -->
+	<select id="getType" parameterType="String" resultType="int">
+		SELECT R_TYPE FROM RIDER WHERE R_ID=#{rider} 
+	</select>
+	
+	<!-- 정비소 문의 조회 -->
+	<select id="getQNA" parameterType="String" resultType="com.bike.webapp.dto.Qna">
+		SELECT * FROM QNA WHERE QA_SHOP=#{shop} ORDER BY QA_TIME DESC
+	</select>
+	
+	<!-- 정비소 신청 조회 -->
+	<select id="getRepairApply" parameterType="String" resultType="com.bike.webapp.dto.Repair_Apply">
+		SELECT * FROM REPAIR_APPLY WHERE RA_SHOP=#{shop} ORDER BY RA_NUM DESC
+	</select>
+	
+	<!-- 정비소 답변 안한 문의 조회 -->
+	<select id="getNoAnserQNA" parameterType="String" resultType="com.bike.webapp.dto.Qna">
+		SELECT * FROM QNA WHERE QA_ANSWER IS NULL AND QA_SHOP=#{shop} ORDER BY QA_TIME DESC
+	</select>
+	
+	<!-- 정비소 확인 안한 신청 조회 -->
+	<select id="getNoConfirmRepairApply" parameterType="String" resultType="com.bike.webapp.dto.Repair_Apply">
+		SELECT * FROM REPAIR_APPLY WHERE RA_CONFIRM=0 AND RA_SHOP=#{shop} ORDER BY RA_NUM DESC
+	</select>
+	
+	<!-- 문의번호로 문의글 조회 -->
+	<select id="getDetailQna" parameterType="int" resultType="com.bike.webapp.dto.Qna">
+		SELECT * FROM QNA WHERE QA_NUM=#{qa_num}
+	</select>
+	
+	<!-- 신청번호로 신청 조회 -->
+	<select id="getDetailRepairApply" parameterType="int" resultType="com.bike.webapp.dto.Repair_Apply">
+		SELECT * FROM REPAIR_APPLY WHERE RA_NUM=#{ra_num}
+	</select>
+	
+	<!-- 문의번호로 문의글 답변 -->
+	<update id="updateDetailQna" parameterType="com.bike.webapp.dto.Qna">
+		UPDATE QNA SET QA_ANSWER=#{qa_answer} WHERE QA_NUM=#{qa_num}
+	</update>
+	
+	<!-- 신청번호로 신청 수락 및 거절 -->
+	<update id="updateRepairApply" parameterType="com.bike.webapp.dto.Repair_Apply">
+		UPDATE REPAIR_APPLY SET RA_CONFIRM=#{ra_confirm} WHERE RA_NUM=#{ra_num}
+	</update>
+	
+	<!-- 사용자 문의 내역 조회 -->
+	<select id="rider_getQNA" parameterType="String" resultType="com.bike.webapp.dto.Qna">
+		SELECT QA_NUM, QA_TITLE, QA_CONTENT, QA_ANSWER, QA_SHOP, QA_RIDER, QA_TIME FROM QNA WHERE QA_RIDER =#{rider}
+	</select>
+	
+	<!-- 사용자 신청 내역 조회 -->
+	<select id="rider_getRepairApply" parameterType="String" resultType="com.bike.webapp.dto.Repair_Apply">
+		SELECT * FROM REPAIR_APPLY WHERE RA_RIDER= #{rider}
+	</select>
+
+	<!-- 정비소 조회(임시) -->
+	<select id="getRepairShop" parameterType="String" resultType="com.bike.webapp.dto.Repair_Shop">
+		select * from REPAIR_SHOP, rider where REPAIR_SHOP.RS_ID=rider.R_ID and rider.r_addr like #{area}
+	</select>
+	
+	<!-- 정비소 상세정보 조회 -->
+	<select id="getRepairShopDetail" parameterType="String" resultType="com.bike.webapp.dto.Repair_Shop">
+		select * from REPAIR_SHOP, rider where REPAIR_SHOP.RS_ID=rider.R_ID and REPAIR_SHOP.RS_ID=#{rs_id}
+	</select>
+	
+	<!-- 정비소 리뷰 조회 -->
+	<select id="getRepairHistory" parameterType="String" resultType="com.bike.webapp.dto.Repair_History">
+		select rh_num,ra_rider,ra_shop,ra_content,rh_day,rh_review, to_char(rh_time, 'YYYY-MM-DD HH24:MI:SS') as rh_time ,rh_answer,rh_score from REPAIR_APPLY, REPAIR_HISTORY where rh_review is not null and rh_num = ra_num and ra_shop=#{ra_shop}
+	</select>
+	
+	<!-- 사용자 문의 등록 -->
+	<insert id="postRider_QNA" parameterType="com.bike.webapp.dto.Qna">
+		INSERT INTO QNA(QA_NUM, QA_TITLE, QA_CONTENT,QA_TIME,QA_RIDER,QA_SHOP)  VALUES (SEQ_QA_NUM.NEXTVAL, #{qa_title}, #{qa_content}, SYSTIMESTAMP+(9/24),#{qa_rider}, #{qa_shop})
+	</insert>
+	
+	<!-- 사용자 신청 등록 -->
+	<insert id="postRider_Apply" parameterType="com.bike.webapp.dto.Repair_Apply">
+		INSERT INTO REPAIR_APPLY(RA_NUM, RA_RIDER,RA_SHOP,RA_TYPE,RA_DATE,RA_CONTENT) VALUES (SEQ_RA_NUM.NEXTVAL, #{ra_rider}, #{ra_shop}, #{ra_type}, #{ra_date}, #{ra_content})
+	</insert>
+	
+	<!-- 사용자 정보조회 -->
+	<select id="getRiderInfo" parameterType="String" resultType="com.bike.webapp.dto.Rider">
+		select r_nickname, R_IMAGE from rider where r_id=#{r_id}
+	</select>
+</mapper>
+

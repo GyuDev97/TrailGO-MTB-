@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="_csrf" th:content="${_csrf.token}"><meta name="_csrf_header" th:content="${_csrf.headerName}">
+  <title>위험지역 병합 | TrailGO 관리자</title><link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body class="admin-page" th:attr="data-kakao-key=${kakaoMapAppKey}">
+  <div th:replace="admin/fragments/sidebar :: sidebar"></div>
+  <div class="admin-main">
+    <div th:replace="admin/fragments/header :: header('위험지역 병합')"></div>
+    <main class="admin-content wide-content" id="merge-page">
+      <div class="page-title"><div><a class="back-to-list" href="/admin/hazards">← 목록으로</a><h1>위험지역 병합</h1>
+        <p>같은 위험을 가리키는 위험지역을 하나의 대표 위험지역으로 합칩니다. 병합된 항목은 삭제되지 않고 원본 제보·제보자·이력이 보존되며, 라이더 앱에는 대표 위험지역만 표시됩니다.</p></div></div>
+
+      <div class="notice notice-unverified" th:if="${#lists.size(zones) < 2}">병합하려면 2건 이상의 위험지역이 필요합니다. 목록에서 항목을 선택해 주세요.</div>
+
+      <div class="detail-layout" th:if="${#lists.size(zones) >= 2}">
+        <section class="map-panel detail-map-panel">
+          <div id="merge-map" class="hazard-map"><div class="map-fallback"><span class="map-marker">!</span><p>지도 위치</p></div></div>
+          <div class="table-scroll">
+            <table class="hazard-table" id="merge-table">
+              <thead><tr><th>대표</th><th>포함</th><th>번호</th><th>유형</th><th>제목</th><th>반경</th><th>상태</th><th>등록일</th><th>제보 내용</th></tr></thead>
+              <tbody>
+                <tr th:each="zone, stat : ${zones}" th:attr="data-id=${zone.id},data-lat=${zone.latitude},data-lng=${zone.longitude},data-radius=${zone.radiusM},data-title=${zone.title},data-type=${zone.hazardType},data-description=${zone.description},data-merged=${zone.merged},data-status=${zone.status}">
+                  <td><input type="radio" name="canonical" class="canonical-radio" th:value="${zone.id}" th:checked="${stat.first}" th:disabled="${zone.merged}" th:attr="aria-label=|#${zone.id}을 대표로|"></td>
+                  <td><input type="checkbox" class="include-check" checked th:disabled="${zone.merged}" th:attr="aria-label=|#${zone.id} 포함|"></td>
+                  <td th:text="|#${zone.id}|">#0</td>
+                  <td th:text="${zone.hazardTypeLabel}">유형</td>
+                  <td class="title-cell"><a th:href="|/admin/hazards/${zone.id}|" target="_blank" th:text="${zone.title}">제목</a><small class="merged-note" th:if="${zone.merged}">이미 병합됨</small></td>
+                  <td th:text="|${zone.radiusM}m|">30m</td>
+                  <td><span class="status-badge" th:classappend="${zone.merged} ? 'status-merged' : |status-${#strings.toLowerCase(zone.status)}|" th:text="${zone.statusLabel}">상태</span></td>
+                  <td th:text="${#temporals.format(zone.createdAt, 'yyyy-MM-dd')}">날짜</td>
+                  <td th:text="${zone.description}">설명</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <aside class="review-panel">
+          <form id="hazard-merge-form" novalidate>
+            <h2 class="panel-title">대표 위험지역 정보 <small>(필요하면 수정)</small></h2>
+            <div class="form-row"><label for="title">제목</label><input id="title" name="title" maxlength="120"></div>
+            <div class="form-row"><label for="hazardType">위험 유형</label>
+              <select id="hazardType" name="hazardType"><th:block th:replace="admin/fragments/hazard-options :: typeOptions(null)"></th:block></select></div>
+            <div class="form-row"><label for="description">설명</label><textarea id="description" name="description" rows="4" maxlength="300"></textarea></div>
+            <div class="form-grid">
+              <div class="form-row"><label for="latitude">위도</label><input id="latitude" name="latitude"></div>
+              <div class="form-row"><label for="longitude">경도</label><input id="longitude" name="longitude"></div>
+            </div>
+            <div class="form-row"><label for="radiusM">위험 반경(m, 10~200)</label><input id="radiusM" name="radiusM" type="number" min="10" max="200"></div>
+
+            <h2 class="panel-title">병합 결과 미리보기</h2>
+            <div id="merge-preview" class="merge-preview"><p>대표 위험지역을 고르면 결과가 표시됩니다.</p></div>
+            <label class="confirm-line" id="type-confirm" hidden><input type="checkbox" id="confirm-type"> 위험 유형이 서로 다른 것을 확인했고, 그래도 병합합니다.</label>
+            <div id="merge-message" class="form-message" role="alert" hidden></div>
+            <div class="review-actions two">
+              <a class="secondary-button" href="/admin/hazards">취소</a>
+              <button class="primary-button" type="button" data-action="merge-confirm" disabled>병합 확인</button>
+            </div>
+          </form>
+        </aside>
+      </div>
+    </main>
+  </div>
+  <script src="/admin/js/admin.js"></script>
+</body></html>

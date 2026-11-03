@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">TrailGO(MTB)</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">TrailGO</string>
+    <string name="nav_header_subtitle">Mountain ride log</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="menu_home">&#xD648;</string>
+    <string name="menu_records">&#xB0B4; &#xAE30;&#xB85D;</string>
+    <string name="menu_course_view">&#xCF54;&#xC2A4; &#xBCF4;&#xAE30;</string>
+    <string name="menu_course_search">&#xCF54;&#xC2A4; &#xAC80;&#xC0C9;</string>
+    <string name="menu_course_scrap">&#xC2A4;&#xD06C;&#xB7A9; &#xBCF4;&#xAD00;&#xD568;</string>
+    <string name="menu_competition_view">&#xACBD;&#xC7C1;&#xC804;</string>
+    <string name="menu_mission_view">&#xBBF8;&#xC158;</string>
+    <string name="menu_danger_view">&#xC704;&#xD5D8;&#xC9C0;&#xC5ED;</string>
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>

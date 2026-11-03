@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One recent ride: the whole card opens the ride's detail. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/home_recent_item"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
+    android:background="@drawable/home_recent_card_bg"
+    android:clickable="true"
+    android:elevation="1dp"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:minHeight="92dp"
+    android:orientation="horizontal"
+    android:padding="10dp">
+
+    <!-- Route drawn from the ride's GPX (a placeholder until it is ready, or when there is none) -->
+    <ImageView
+        android:id="@+id/home_recent_item_thumb"
+        android:layout_width="84dp"
+        android:layout_height="64dp"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop"
+        android:src="@drawable/home_thumb_placeholder" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/home_recent_item_course"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="#172019"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/home_recent_item_date"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#6B746E"
+            android:textSize="12sp" />
+
+        <com.google.android.flexbox.FlexboxLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            app:alignItems="center"
+            app:flexWrap="wrap">
+
+            <LinearLayout style="@style/HomeMetaGroup">
+                <ImageView style="@style/HomeMetaIcon" android:src="@drawable/riding_ic_flag" />
+                <TextView android:id="@+id/home_recent_item_distance" style="@style/HomeMetaText" />
+            </LinearLayout>
+
+            <LinearLayout style="@style/HomeMetaGroup">
+                <ImageView style="@style/HomeMetaIcon" android:src="@drawable/ic_mountain_home" />
+                <TextView android:id="@+id/home_recent_item_height" style="@style/HomeMetaText" />
+            </LinearLayout>
+
+            <LinearLayout style="@style/HomeMetaGroup">
+                <ImageView style="@style/HomeMetaIcon" android:src="@drawable/riding_ic_clock" />
+                <TextView android:id="@+id/home_recent_item_duration" style="@style/HomeMetaText" />
+            </LinearLayout>
+        </com.google.android.flexbox.FlexboxLayout>
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:importantForAccessibility="no"
+        android:text="›"
+        android:textColor="#8D938E"
+        android:textSize="24sp" />
+</LinearLayout>

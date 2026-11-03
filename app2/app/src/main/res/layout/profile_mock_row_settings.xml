@@ -1,0 +1,1 @@
+<TextView xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/profile_menu_settings" style="@style/ProfileMockRow" android:drawableStart="@drawable/drawer_ic_settings_custom" android:text="설정" />

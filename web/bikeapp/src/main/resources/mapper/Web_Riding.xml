@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bike.webapp.mapper.RidingMapper">
+	
+	<!-- 로그인 후 페이지 구성을 위한 최신 라이딩 기록 조회 -->
+	<select id="getRidingRecordTop3" parameterType="String" resultType="com.bike.webapp.dto.RidingRecord">
+		<![CDATA[ SELECT * FROM (SELECT * FROM RIDING_RECORD WHERE RR_RIDER = #{rr_rider} ORDER BY RR_DATE DESC) WHERE ROWNUM <= 3 ]]>
+	</select>
+	
+	<!-- 사용자 주행기록 조회 -->
+	<select id="getRidingRecord" parameterType="String" resultType="com.bike.webapp.dto.RidingRecord">
+		select * from riding_record where rr_rider = #{rr_rider} order by rr_date desc
+	</select>
+	
+	<!-- 라이딩 넘버로 GPX파일명 조회 -->
+	<select id="getGpxFileByRR_Num" parameterType="Integer" resultType="String">
+		select (case when to_date(to_char(rr_date,'YYYYMMDD'),'YYYYMMDD') >= to_date(to_char(sysdate-7,'YYYYMMDD'),'YYYYMMDD') then concat('NEW/',rr_gpx) else rr_gpx end) from riding_record where rr_num=#{rr_num}
+	</select>
+	
+	<!-- 라이딩 넘버로 라이딩기록 조회 -->
+	<select id="getRidingRecordDetail" parameterType="Integer" resultType="com.bike.webapp.dto.RidingRecord">
+		SELECT * FROM RIDING_RECORD WHERE RR_NUM = #{rr_num}
+	</select>
+	
+	<!-- 라이딩 기록 공개/비공개 전환 -->
+	<update id="updateRidingRecord">
+		UPDATE RIDING_RECORD SET RR_OPEN=#{rr_open} WHERE RR_NUM=#{rr_num}
+	</update>
+	
+	<!-- 라이딩 기록 이름 변경 -->
+	<update id="updateRidingRecordName">
+		UPDATE RIDING_RECORD SET RR_NAME=#{rr_name} WHERE RR_NUM=#{rr_num}
+	</update>
+	
+	<!-- 등록된 위험지역 조회 -->
+	<select id="getDangerousArea" resultType="com.bike.webapp.dto.DangerousArea">
+		SELECT * FROM dangerous_area
+	</select>
+	
+	<!-- 등록된 위험지역 조회 -->
+	<select id="getNoMtbArea" resultType="com.bike.webapp.dto.Nomtb">
+		SELECT * FROM PROHIBITION
+	</select>
+	
+	<!-- 사용자 등록 위험지역 조회 -->
+	<select id="getUserDangerousArea" parameterType="String"
+		resultType="com.bike.webapp.dto.DangerousArea">
+		select * from dangerous_area where DA_RIDER = #{rr_rider}
+	</select>
+	
+	<!-- 위험지역신청 등록 -->
+	<insert id="postDangerousArea"	parameterType="com.bike.webapp.dto.DangerousArea">
+		insert into dangerous_area(da_num, da_rider,da_latitude, da_addr, da_status, da_content, da_longitude, da_image)
+		values(SEQ_DANGEROUSAREA.nextval, #{da_rider,jdbcType=VARCHAR}, #{da_latitude,jdbcType=VARCHAR},	#{da_addr,jdbcType=VARCHAR}, 0, #{da_content,jdbcType=VARCHAR}, #{da_longitude,jdbcType=VARCHAR}, #{da_image,jdbcType=VARCHAR})
+	</insert>
+	
+	<!-- 입산통제지역 등록 -->
+	<insert id="postnoMtb"	parameterType="com.bike.webapp.dto.Nomtb">
+		INSERT INTO PROHIBITION (PR_RIDER, PR_LATTUDE, PR_ADDR, PR_IMAGE, PR_STATUS, PR_CONTENT, PR_LONGITUDE)
+		VALUES (
+		#{pr_rider},
+		#{pr_lattude},
+		#{pr_addr},
+		#{pr_image},
+		0,
+		#{pr_content},
+		#{pr_longitude}
+		)
+
+	</insert>
+	
+	<!-- 사용자 스크랩 코스 조회 -->
+	<select id="getScrapCourse" parameterType="String"
+		resultType="com.bike.webapp.dto.RidingRecord">
+		select * from riding_record a where exists (select ss_rnum from scrap_status where ss_rider=#{rr_rider} and ss_rnum =a.rr_num)
+	</select>
+	
+	<!-- 현재는 코스가 아닌 주행기록을 조회하기에 협의 후 최종결정 --> 
+	<!-- 등록된 코스 조회 -->
+	<select id="getCourses" resultType="com.bike.webapp.dto.RidingRecord">
+		SELECT * FROM RIDING_RECORD WHERE RR_OPEN=1 AND (RR_START_AREA LIKE CONCAT('%', #{keyword}, '%') OR RR_END_AREA LIKE CONCAT('%', #{keyword}, '%'))
+	</select>
+	
+	<!-- 사용자 스크랩 코스 추가 -->
+	<insert id="postScrapCourse">
+		INSERT INTO SCRAP_STATUS VALUES(#{ss_rider}, #{ss_rnum})
+	</insert>
+	
+	<!-- 사용자 스크랩 코스 삭제 -->
+	<delete id="deleteScrapCourse">
+		DELETE FROM SCRAP_STATUS WHERE SS_RIDER=#{ss_rider} AND SS_RNUM=#{ss_rnum}
+	</delete>
+	
+	<!-- 라이딩 넘버로 리뷰 조회 -->
+	<select id="getCourseReviews" parameterType="Integer" resultType="com.bike.webapp.dto.Course_Review">
+		SELECT RIDER.R_IMAGE as RIDERIMG, cr_num, r_nickname cr_rider, to_char(cr_time, 'YYYY-MM-DD HH24:MI:SS') reg_time, cr_content, CR_IMAGES 
+		FROM RIDER, COURSE_RIVIEW 
+		WHERE RIDER.R_ID=COURSE_RIVIEW.CR_RIDER AND COURSE_RIVIEW.CR_RNUM=#{cr_rnum} order by cr_time desc
+	</select>
+	
+	<!-- 리뷰 등록 -->
+	<insert id="postCourseReview" parameterType="com.bike.webapp.dto.Course_Review">
+		INSERT INTO COURSE_RIVIEW(CR_NUM, CR_RIDER, CR_CONTENT, CR_RNUM, CR_IMAGES, CR_TIME) VALUES (SEQ_COURSEREVIEW.NEXTVAL, #{cr_rider}, #{cr_content}, #{cr_rnum}, #{cr_images, jdbcType=VARCHAR}, #{cr_time})
+	</insert>
+	
+	<!-- 리뷰 삭제 -->
+	<delete id="deleteCourseReview" parameterType="int">
+		DELETE FROM COURSE_RIVIEW WHERE CR_NUM=#{cr_num}
+	</delete>
+	
+	<!-- 리뷰 수정 -->
+	<update id="updateCourseReview">
+		UPDATE COURSE_RIVIEW SET CR_CONTENT=#{cr_content}, CR_TIME=SYSTIMESTAMP+9/24 WHERE CR_NUM=#{cr_num}
+	</update>
+	
+	<!-- 코스 추천 -->
+	<insert id="postLS" parameterType="com.bike.webapp.dto.Like_Status">
+		INSERT INTO LIKE_STATUS VALUES (#{ls_rider}, #{ls_rnum})
+	</insert>
+	
+	<!-- 코스 추천수 조회 -->
+	<select id="getRR_Like" parameterType="int" resultType="int">
+		SELECT COUNT(*) FROM LIKE_STATUS WHERE LIKE_NUM=#{ls_rnum}
+	</select>
+	
+	<!-- 코스 추천 취소 -->
+	<delete id="deleteLS" parameterType="com.bike.webapp.dto.Like_Status">
+		DELETE FROM LIKE_STATUS WHERE LS_RNUM=#{ls_rnum} and LS_RIDER=#{ls_rider}
+	</delete>
+	
+	<!-- 코스 해시태그 조회 -->
+	<select id="getTagList" parameterType="int" resultType="com.bike.webapp.dto.Tag_Status">
+		SELECT * FROM TAG_STATUS WHERE TS_RNUM=#{ts_rnum} ORDER BY TS_NUM
+	</select>
+	
+	<!-- 해시태그 삭제 -->
+	<delete id="removeTag" parameterType="int">
+		DELETE TAG_STATUS WHERE TS_NUM=#{ts_num}
+	</delete>
+	
+	<!-- 해시태그 등록 -->
+	<insert id="insertTag" parameterType="com.bike.webapp.dto.Tag_Status">
+		INSERT INTO TAG_STATUS(ts_num, ts_rider, ts_rnum, ts_tag) VALUES(TAG_STATUS_SEQ.nextval, #{ts_rider}, #{ts_rnum}, #{ts_tag})
+	</insert>
+	
+	<!-- 코스명 검색 - 검색어 포함 -->
+	<select id="searchCourseName" parameterType="com.bike.webapp.dto.PagingVO" resultType="com.bike.webapp.dto.RidingRecord">
+		select * from (
+			select rownum rn, c.rr_num, c.rr_name, c.rr_date, c.rr_distance, c.cnt_like as rr_like
+			from ( SELECT a.* , b.cnt_like
+			FROM RIDING_RECORD a, cnt_like b 
+			where rr_name like #{name} and a.rr_num=b.rr_num order by b.cnt_like desc ) c
+		) where rn between #{start} and #{end}
+	</select>
+	
+	<!-- 코스명 검색 - 개수 파악 -->
+	<select id="cnt_searchCourseName" parameterType="String" resultType="int">
+		SELECT count(*) FROM RIDING_RECORD a, cnt_like b where rr_name like #{rr_name} and a.rr_num=b.rr_num	
+	</select>
+	
+	<!-- 전체 라이딩 평균 기록 조회 -->
+	<select parameterType="String" resultType="com.bike.webapp.dto.Avg_RidingRecord" id="getAVGRR">
+		select * from (
+		  select round(avg(rr_distance),2) distance, round(avg(rr_topspeed),2) topspeed, round(avg(rr_avgspeed),2) avgspeed, round(avg(rr_time),2) time, round(avg(rr_high),2) avghigh from riding_record
+		), (
+		  select round(avg(rr_distance),2) user_distance, round(avg(rr_topspeed),2) user_topspeed, round(avg(rr_avgspeed),2) user_avgspeed, round(avg(rr_time),2) user_time, round(avg(rr_high),2) user_avghigh from riding_record where RR_RIDER=#{rider}
+		) 
+	</select>
+	
+	<!-- 사용자의 총 라이딩 횟수 조회 -->
+	<select id="countRidingRecord" parameterType="String" resultType="int">
+		select count(rr_rider) from riding_record where rr_rider=#{rider}
+	</select>
+	
+	<!-- 추천코스 제공 - 초급자용 -->
+	<select id="getBeginnerCourse" resultType="com.bike.webapp.dto.RidingRecord">
+		<![CDATA[
+			select * from (
+				select * from (
+				select rna, (rank1+rank2) rank from 
+				( select sq1.*, rownum rank1 from (select rr_num rna, rr_distance, abs(rr_distance-dis) from riding_record, (select avg(rr_distance) dis from (select * from riding_record a order by rr_distance) where rownum < 10) order by 3) sq1 ),
+				( select sq2.*, rownum rank2 from (select rr_num rnb, rr_distance, abs(rr_high-h) from riding_record, (select avg(rr_high) h from (select * from riding_record a order by rr_high) where rownum < 10) order by 3) sq2 )
+				where rna=rnb order by 2 ) where rownum<=3), riding_record where rr_num=rna order by rank
+		  ]]>
+	</select>
+	
+	<!-- 추천코스 - 입문자용 -->
+	<select id="getRecommandCourse" parameterType="String" resultType="com.bike.webapp.dto.RidingRecord">
+	 <![CDATA[
+		select * from (
+		select * from (
+		select rna, (ranka+rankb) rank from 
+		(select a.*, rownum ranka from (select rr_num rna, rr_distance, rr_high, rr_time, rr_avgspeed, h, abs(rr_high-h) from riding_record, (select avg(rr_distance) dis, avg(rr_high) h, avg(rr_time) t, avg(rr_avgspeed) avs from riding_record where rr_rider = #{rider} group by rr_rider) order by 7) a) subq,
+		(select b.*, rownum rankb from (select rr_num rnb, rr_distance, rr_high, rr_time, rr_avgspeed, dis, abs(rr_distance-dis) from riding_record, (select avg(rr_distance) dis, avg(rr_high) h, avg(rr_time) t, avg(rr_avgspeed) avs from riding_record where rr_rider = #{rider} group by rr_rider) order by 7) b) 
+		where rna=rnb order by 2) where rownum<=3), riding_record where rr_num=rna order by rank
+	]]>
+	</select>
+	
+	<!-- 사용자 닉네임 조회 -->
+	<select id="getRiderNickName" parameterType="String" resultType="String">
+		select r_nickname from rider where r_id=#{rider}
+	</select>
+	
+	<!-- 추천코스 상세 정보 제공 -->
+	<select id="getRecomCourse" parameterType="int" resultType="com.bike.webapp.dto.Recom_Course">
+		select rr_name rs_name, rr_distance rs_distance, rr_high rs_high, rr_area rs_area, round((avgspd1+avgspd2)/2,2) rs_avgspeed, cnt rs_cnt,truerank, total, percent from (
+		    select rr_name,rr_distance, rr_high, rr_area, rr_avgspeed avgspd1 from riding_record where rr_num=#{rr_num}
+		), (
+		  select count(rr_foname) cnt, avg(rr_avgspeed) avgspd2 from riding_record where rr_foname=(select rr_name from riding_record where rr_num=#{rr_num})
+		), (
+		select truerank, total, round(truerank/total*100) percent from (
+		select rownum trueRank, C.* from (
+		select rr_numA, (rank_H+rank_D) from (
+		  select rownum rank_H, A.* from( 
+		  select rr_num rr_numA, rr_high from riding_record order by rr_high desc 
+		  ) A
+		),(
+		  select rownum rank_D, B.* from( 
+		  select rr_num rr_numB, rr_distance from riding_record order by rr_distance desc 
+		) B
+		) where rr_numA=rr_numB order by 2)C),(select count(rr_num) total from riding_record) where rr_numA=#{rr_num}
+		)
+	</select>
+</mapper>
+
